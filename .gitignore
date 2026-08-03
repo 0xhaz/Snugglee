@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# INTERNAL — never commit
+# ─────────────────────────────────────────────────────────────────────────────
+# Product strategy, unit economics, margins, vendor pricing, brand/trademark
+# assessment, schedule and risk register. These stay on disk and out of git.
+#
+# Also holds the third-party design reference, which is not ours to publish.
+_internal/
+
+# dependencies
+node_modules/
+
+# secrets — vendor keys live here and must never be committed.
+# All vendor calls proxy through the backend: no API keys in the client, ever.
+.env
+.env.*
+!.env.example
+*-service-account.json
+*-credentials.json
+
+# build output
+dist/
+build/
+.expo/
+
+# generated art — large, and reproducible from the pipeline
+assets-pipeline/out/
+
+# generated audio / spike artefacts
+*.mp3
+*.wav
+
+# macOS
+.DS_Store
+
+# logs
+*.log
+npm-debug.*

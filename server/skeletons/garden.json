@@ -1,0 +1,82 @@
+{
+  "id": "garden",
+  "tile": "The firefly garden",
+  "emoji": "✨",
+  "setting": "night garden",
+  "companion": "a small knitted turtle",
+  "companionArt": "a small knitted toy turtle, sage-green shell with visible stitches, soft cream underside, tiny embroidered smile, one slightly crooked flipper",
+  "pageCount": 12,
+  "pages": [
+    {
+      "n": 1,
+      "text": "{childName} is not quite ready to sleep. Outside the window the sky has gone soft and dark, and somewhere far away, in the {setting}, {companion} is waiting."
+    },
+    {
+      "n": 2,
+      "text": "{childName} steps through the back door into the {setting}. The air feels warm and gentle on their skin. {companion} rests tucked safely against {childName}'s chest. The tall flowers in the garden begin to nod their sleepy heads as the day fades into a velvet hush. Everything feels calm and still here. The earth smells sweet, like damp soil and blooming jasmine. {childName} walks very slowly along the winding path, listening to the quiet rustle of leaves as they drift into a tranquil slumber."
+    },
+    {
+      "n": 3,
+      "text": "Bright, tiny lights begin to flicker in the shadows of the {setting}. These fireflies glow like little lanterns, guiding the way through the grass. {childName} finds a soft, mossy patch to sit down. {companion} is very cozy in {childName}'s arms, feeling the gentle rhythm of every breath. The world feels immense and peaceful tonight. {childName} watches a firefly land on a leaf nearby, its light dimming and brightening like a slow, steady heartbeat. Everything is safe, and everything is waiting for rest."
+    },
+    {
+      "n": 4,
+      "text": "The breeze carries the faint scent of honeysuckle through the {setting}. {childName} moves to the porch, where a soft blanket lies ready. The porch light casts a golden, muted glow, making the wood feel warm beneath {childName}'s feet. {companion} rests comfortably on the blanket, feeling snug and secure. The garden beyond the porch is now silent, with all the petals folded tight against the cool night air. {childName} stretches out, feeling heavy and relaxed, enjoying the luminous sparkle of the evening stars overhead."
+    },
+    {
+      "n": 5,
+      "text": "{childName} pulls the soft blanket up to their chin. It is warm and comforting against the night air. {companion} stays right there, tucked under {childName}'s arm, perfectly still. The quiet of the {setting} wraps around them like a gentle hug. {childName}'s eyes grow heavy as they watch the last flickering light in the yard. Their breathing becomes deep and steady. The night is quiet, the world is resting, and {childName} drifts away into a soft, dreamless sleep."
+    },
+    {
+      "n": 6,
+      "text": "The soft blanket feels like a warm cloud around {childName}. There is no need to move or talk anymore. {companion} stays pressed close, feeling the steady warmth of {childName}’s hand resting on its shell. The {setting} is now a tapestry of deep blues and purples. Each blade of grass holds a tiny droplet of dew, glistening in the dark. {childName} hears the soft, slow rhythm of the wind moving through the trees. It is a sleepy song that calls for deep rest. Everything is perfect and quiet here."
+    },
+    {
+      "n": 7,
+      "text": "The world feels very small and safe now. {childName} watches the last tiny spark in the {setting} fade away. The air is cool, but the blanket keeps {childName} perfectly cozy. {companion} feels soft and familiar against {childName}’s cheek. There are no more sounds to hear, only the gentle hum of the night. {childName} blinks slowly, feeling a deep sense of peace. The day is finished, and all the flowers are folded for the night. Every breath is slower than the one before it."
+    },
+    {
+      "n": 8,
+      "text": "The porch is a little island of stillness in the {setting}. {childName} feels the weight of the day melting away into the floorboards. {companion} rests so quietly that it almost seems to be dreaming too. The shadows are long and gentle, reaching out to tuck everything into sleep. {childName} stops thinking about the garden and just feels the softness beneath them. The air holds them like a cradled treasure. Everything is soft, everything is dim, and everything is waiting for the morning to come in its own good time."
+    },
+    {
+      "n": 9,
+      "text": "{childName} closes their eyes and lets go of the last little worry. {companion} is safe and warm in {childName}’s arms. The {setting} is a dark, peaceful cradle. There is no motion in the garden, and there is no noise in the air. The stars are sleepy, and the earth is still. {childName} drifts further and further away, floating on a soft, dark sea of rest. Deep sleep finds them now, wrapping them in velvet quiet. {childName} is fast asleep, tucked away in the gentle night."
+    },
+    {
+      "n": 10,
+      "text": "{childName} breathes in the cool air of the {setting}, feeling perfectly still. The blanket is a heavy, warm weight that holds {childName} down, making movement feel far away. {companion} stays nestled tight against {childName}’s chest, its texture soft and familiar. The garden is silent now, with every leaf and stem resting in the dark. There is no desire to do anything but stay right here, feeling the heartbeat of the earth. Every muscle releases its hold, sinking deeper into the cushions of the porch chair."
+    },
+    {
+      "n": 11,
+      "text": "The darkness in the {setting} is friendly and thick, wrapping around the porch like a soft quilt. {childName} feels the eyelids fluttering, then closing almost all the way. {companion} remains quiet and still, a small, steady presence against {childName}’s side. The rhythm of the night is slow, matching the steady, shallow breaths that fill the space. A gentle wave of peace washes over {childName}, washing away the day. The world is nothing but warmth, softness, and the quiet company of a dear, trusted friend who will stay all night."
+    },
+    {
+      "n": 12,
+      "text": "{childName} is now in the deep, velvet center of the night. Every thought has drifted away into the shadows of the {setting}. {companion} rests securely as {childName}’s hand relaxes its hold, fingers curling gently on the blanket. There is only the softest sound of breathing in the silence. The garden is finished with its day, and so is {childName}. Everything is calm. Everything is dim. Everything is quiet. {childName} drifts into a deep, dreamless sleep, wrapped in the safety of the night, fast and soundly asleep."
+    }
+  ],
+  "stretchWords": [
+    "tranquil",
+    "luminous"
+  ],
+  "beats": [
+    {
+      "atPage": 1,
+      "scene": "sitting up in bed hugging {companion}, watching a few fireflies blink outside the window"
+    },
+    {
+      "atPage": 4,
+      "scene": "stepping out of a warm lit back door into a night garden filled with drifting fireflies, {companion} held close"
+    },
+    {
+      "atPage": 8,
+      "scene": "sitting on soft grass surrounded by glowing fireflies while big flowers slowly close for the night, {companion} beside them"
+    },
+    {
+      "atPage": 11,
+      "scene": "asleep under a blanket on the porch step, fireflies hovering softly, {companion} tucked under their chin"
+    }
+  ],
+  "authoredAt": "2026-07-30"
+}

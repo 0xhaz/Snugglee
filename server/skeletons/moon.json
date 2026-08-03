@@ -1,0 +1,83 @@
+{
+  "id": "moon",
+  "tile": "To the moon",
+  "emoji": "🌙",
+  "setting": "cloud fields",
+  "companion": "a small grey plush rabbit",
+  "companionArt": "a small plush toy rabbit, soft dove-grey fur, one ear that flops slightly forward, a faded cornflower-blue ribbon tied around its neck, black stitched eyes",
+  "pageCount": 12,
+  "pages": [
+    {
+      "n": 1,
+      "text": "{childName} is not quite ready to sleep. Outside the window the sky has gone soft and dark, and somewhere far away, in the {setting}, {companion} is waiting."
+    },
+    {
+      "n": 2,
+      "text": "{childName} steps into the {setting}. It is a gentle place made of thick, silent pillows of mist. {childName} feels the cool, velvet air against their cheeks. {companion} tucks into the crook of {childName}'s arm. Together, they drift upward, moving slower than a falling feather. Everything is quiet. The world below grows faint and blurry. They pass through a wisp of silver vapor that smells like clean rain. {childName} breathes in deeply. The quiet of the {setting} is vast and calm. {companion} feels soft and steady."
+    },
+    {
+      "n": 3,
+      "text": "Higher they float. The moon waits ahead, a round and pearly lantern in the ink-blue sky. It wears a sleepy, golden smile that looks just like a lullaby. {childName} traces the glow with one finger. {companion} rests against {childName}'s heart, feeling the slow, rhythmic beat of a tired body. This is a tranquil journey, where time stretches out like warm honey. There is nothing to do and nowhere to rush. The {setting} surrounds them with a hush, cradling them like a gentle tide rocking a tiny, wooden boat."
+    },
+    {
+      "n": 4,
+      "text": "The moon beams shine down, soft and diffuse. {childName} feels eyelids growing heavy, like two curtains closing at the end of a long day. {companion} nuzzles closer to {childName}'s neck. They sway through the luminous air, drifting past stars that blink with a lazy, slow pulse. The {setting} feels like a warm blanket made of starlight. Every movement is a slow-motion dance. {childName} sighs, a long and peaceful sound that echoes softly into the clouds. The air is still, holding them in a quiet, weightless embrace."
+    },
+    {
+      "n": 5,
+      "text": "Slowly, the path curves back toward home. They sink down through the fluffy, white layers of the {setting}, moving with the ease of a leaf floating to the ground. The moon's light fades to a soft, comforting shadow. {childName} is almost asleep now, curled small and safe. {companion} is warm and familiar, resting perfectly still. The world is dark and quiet. {childName} drifts into the velvet silence of dreams. Everything is soft. Everything is slow. Everything is at rest. The sleep is deep, and the night is kind."
+    },
+    {
+      "n": 6,
+      "text": "The journey back through the {setting} happens in slow, rhythmic pulses. {childName} feels the thick clouds parting like soft curtains. The air is very still here, quiet and calm. {companion} is pressed close against {childName}, a small weight of comfort in the cool night. Every breath {childName} takes is longer than the one before. The world feels very far away now. There is no sound at all, only the gentle movement of air and the steady, slow beating of a heart. Everything rests in a deep, peaceful stillness."
+    },
+    {
+      "n": 7,
+      "text": "Back down, closer to home, the {setting} feels like a thick, downy quilt. {childName} moves with effortless ease. The shadows are soft, hiding all the corners of the room. {companion} is perfectly still, a warm and familiar presence in {childName}'s arms. The eyelids are closed tight now, heavy and tired. A quiet sigh leaves {childName}'s lips, vanishing into the darkness of the room. Time is folding itself away. There is no more thinking, only the slow, natural slide toward a deep and dreamless sleep. Everything is very quiet."
+    },
+    {
+      "n": 8,
+      "text": "The room is dim and cozy, a safe harbor after the long, slow drift through the {setting}. {childName} settles deep into the softness of the bed. The weight of the day slips away, leaving only stillness. {companion} is tucked safely under an arm, resting as {childName} rests. The blankets feel warm, shielding the body from the night. All the movement has stopped. The air is steady. The quiet is complete. {childName} is tucked in, held by the comfort of the blankets, and the soft, dark night feels like a hug."
+    },
+    {
+      "n": 9,
+      "text": "Now, the breath of {childName} is shallow and slow. The world has faded entirely away. {companion} does not move, resting quietly in the dark. There is nothing left to do. {childName} is lost in the soft, velvet silence of the night. The sleep is deep, steady, and very calm. The {setting} is gone, the stars are gone, and only peace remains. {childName} sleeps, safe and small and still. The night is kind, the house is quiet, and the resting is perfect. All is well, and all is asleep."
+    },
+    {
+      "n": 10,
+      "text": "{childName} breathes in the stillness of the room. The air feels heavy with comfort, wrapped around the bed like a soft, invisible blanket. {companion} stays perfectly still, a quiet partner in the dark. There is no movement left to make. Every muscle in {childName}’s body relaxes, sinking into the mattress as if it were a cloud from the {setting}. The shadows are long and kind, holding the room in a gentle, hushed embrace. Everything is slow, everything is dim, and the busy world is entirely forgotten."
+    },
+    {
+      "n": 11,
+      "text": "The darkness is like a warm, thick velvet quilt, protecting {childName} from everything except sweet dreams. {companion} rests against a small, steady chest, sharing the quiet of the night. {childName}’s eyes are closed, heavy with the weight of a long, peaceful day. Thoughts have slowed until they are barely there, like embers fading in a fireplace. The room holds its breath, waiting for the final, soft drift into the deep rest that is waiting just ahead. There is nothing to hold, nothing to see, and nothing to do."
+    },
+    {
+      "n": 12,
+      "text": "Everything stops now. {childName} is tucked away, safe in the center of the dark and quiet home. The breathing is a slow, rhythmic tide that ebbs and flows in the silence. {companion} does not move, a loyal friend watching over a deep, dreamless sleep. The night is kind. The house is still. The journey through the {setting} is complete, and rest has finally arrived. {childName} is asleep, small and calm, drifting further and further into the soft, velvet quiet where dreams wait to be found."
+    }
+  ],
+  "stretchWords": [
+    "tranquil",
+    "diffuse",
+    "luminous"
+  ],
+  "beats": [
+    {
+      "atPage": 1,
+      "scene": "sitting up in bed hugging {companion}, looking through a round window at a big low moon"
+    },
+    {
+      "atPage": 4,
+      "scene": "stepping from the window sill onto a soft cloud, {companion} tucked under one arm, the bedroom glowing behind"
+    },
+    {
+      "atPage": 8,
+      "scene": "sitting high on a cloud beside an enormous gentle smiling moon with closed eyes, {companion} on their lap"
+    },
+    {
+      "atPage": 11,
+      "scene": "asleep curled on a cloud drifting back down towards the lit bedroom window, {companion} held close"
+    }
+  ],
+  "authoredAt": "2026-07-30"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "train",
+  "tile": "The slow train",
+  "emoji": "🚂",
+  "setting": "sleeping countryside",
+  "companion": "a well-worn corduroy bear",
+  "companionArt": "a small well-worn corduroy teddy bear, warm honey-brown ribbed fabric, one patched paw in slightly darker thread, small black bead eyes, a soft flattened nose",
+  "pageCount": 12,
+  "pages": [
+    {
+      "n": 1,
+      "text": "{childName} is not quite ready to sleep. Outside the window the sky has gone soft and dark, and somewhere far away, in the {setting}, {companion} is waiting."
+    },
+    {
+      "n": 2,
+      "text": "{childName} climbs onto the soft velvet seat of the train. {companion} sits right beside {childName}, his corduroy fur feeling cozy and warm. Outside, the night sky is deep indigo. The train wheels hum a slow, rhythmic song. It sounds like a gentle lullaby for the {setting}. {childName} rests a head against the cool window glass. Everything is calm and still. The fields outside are vast and tranquil as they drift past in the moonlight. {childName} pulls a soft blanket up to a chin and watches the dim lights flicker."
+    },
+    {
+      "n": 3,
+      "text": "The train sways from side to side, rocking {childName} and {companion} in a steady, soothing motion. The {setting} beyond the glass looks like a patchwork quilt of shadows and starlight. {companion} feels very soft against {childName}'s shoulder. A tiny station flashes by, silent and empty, with only one lantern glowing in the dark. The train moves slower now, feeling heavy and sleepy. {childName} breathes in the scent of cedar and clean night air. The world feels small, safe, and tucked away from everything else, cradled by the gentle rhythm."
+    },
+    {
+      "n": 4,
+      "text": "The rhythmic clatter of the train tracks softens into a whisper. {childName} blinks slowly, watching the dark trees sway in the distance of the {setting}. {companion} rests quietly in {childName}'s lap, his stitched smile looking very serene. The train carriage is dim and quiet. A soft, amber glow fills the space. {childName}'s eyelids feel heavy like velvet curtains closing for the night. The motion is slower and deeper, rocking both {childName} and {companion} into a comfortable, sleepy haze where thoughts drift away like tiny clouds in the quiet moonlight."
+    },
+    {
+      "n": 5,
+      "text": "Everything is quiet now. {childName} is tucked deep into the cushions with {companion} held tight. The train is just a gentle, rocking cradle moving through the dark. There is nothing left to do but rest. The {setting} is silent under a blanket of stars. {childName} feels very sleepy and warm. {companion} is resting, too. The train continues its slow, steady journey into the deepest part of the night. {childName} drifts into a dream, safe, peaceful, and perfectly still. The journey ends in soft, quiet sleep."
+    },
+    {
+      "n": 6,
+      "text": "The train slows down even more as it passes through the dark heart of the {setting}. Each rhythmic click against the tracks is slower than the last. {childName} feels the heavy, pleasant weight of exhaustion pulling at sleepy limbs. {companion} rests against {childName}, his corduroy fur warm and familiar in the dim light. The world outside the window is a velvet blur of soft shadows and distant, twinkling stars. Everything feels slow, measured, and kind. {childName} closes eyes for a long moment, listening to the quiet, steady hum of the train."
+    },
+    {
+      "n": 7,
+      "text": "A faint, amber light glows from a tiny station ahead, but the train barely whispers past it. The {setting} is sound asleep now, draped in a deep, peaceful dark. {childName} feels the gentle sway of the carriage rocking like a cradle. It is very easy to let go of the day. {companion} is perfectly still, soft and huggable. {childName} takes a slow, deep breath, feeling the air grow cooler and quieter. The steady, rocking motion is the only sound left, a soft heartbeat for the journey through the night."
+    },
+    {
+      "n": 8,
+      "text": "There are no more lights flickering by outside. The {setting} is now a quiet blanket of starlight and soft shadows. {childName} feels very small and safe, tucked away in the cozy corner of the train. {companion} is nestled snugly against {childName}, sharing the warmth. Eyelids are almost completely closed, and the rhythm of the train has slowed to a soft, lingering pulse. Thoughts have faded away, leaving only the sensation of gentle rocking and the comfort of the soft blanket. Everything is still, dark, and perfectly calm for {childName}."
+    },
+    {
+      "n": 9,
+      "text": "Deep, quiet rest fills the carriage. {childName} is drifting far away into a soft, dreamless space, held safe by the steady movement of the train. {companion} stays close, a constant, gentle presence in the darkness. The {setting} remains silent, waiting under the vast sky. Nothing moves except for the slow, rocking rhythm that keeps everything in perfect balance. {childName} is almost gone, tucked into the deepest, warmest part of the night. Sleep is here now, wrapping around {childName} like a soft, invisible blanket, peaceful and complete in the quiet stillness."
+    },
+    {
+      "n": 10,
+      "text": "The train is a slow, steady pulse in the dark. {childName} feels the heavy warmth of the blanket wrapped close. Outside, the {setting} is a quiet sea of shadows, holding still under the velvet night. {companion} rests against {childName}’s arm, soft and steady. The rhythmic sway of the train carriage becomes a soft, humming lullaby. Every breath {childName} takes is slow and deep. The world is very small and very safe. Everything is just right for closing eyes and letting the gentle motion lead the way."
+    },
+    {
+      "n": 11,
+      "text": "The lights inside the train are dim and soft. {childName} is tucked deep into the cushions, feeling held by the rocking train. {companion} stays right beside {childName}, a warm, familiar shape in the quiet. The {setting} outside is long gone into the dark, silent and still. There are no more sounds, only the slow sway of the train carriage. {childName} feels heavy and relaxed, like a soft leaf falling to the ground. It is time to let go of everything and drift into the dark."
+    },
+    {
+      "n": 12,
+      "text": "Soft darkness fills every corner of the train. {childName} is quiet now, with eyes fully closed and breath slow and light. {companion} stays close in the stillness, held in {childName}’s gentle grip. The {setting} is silent, resting under the vast, deep sky. The train rocks one last time, smooth and slow, like a rocking chair in the night. {childName} is sound asleep, tucked away in a dream of stars and gentle motion. Peace is everywhere, deep and still, as the journey continues in quiet, dream-filled sleep."
+    }
+  ],
+  "stretchWords": [
+    "tranquil",
+    "serene"
+  ],
+  "beats": [
+    {
+      "atPage": 1,
+      "scene": "sitting up in bed hugging {companion}, hearing a distant train whistle through the window"
+    },
+    {
+      "atPage": 4,
+      "scene": "stepping aboard a small warm-lit night train at a tiny country platform, {companion} under one arm"
+    },
+    {
+      "atPage": 8,
+      "scene": "INSIDE a cosy train carriage, sitting by a big window watching dark sleeping fields roll past, {companion} on the seat beside them, warm lamp overhead"
+    },
+    {
+      "atPage": 11,
+      "scene": "asleep in the train carriage seat under a blanket, {companion} held close, the dark window and a small lamp behind them"
+    }
+  ],
+  "authoredAt": "2026-07-30"
+}

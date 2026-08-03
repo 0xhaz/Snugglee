@@ -1,0 +1,85 @@
+{
+  "skeletons": [
+    {
+      "id": "garden",
+      "panels": [
+        "01.jpg",
+        "02.jpg",
+        "03.jpg",
+        "04.jpg"
+      ],
+      "beats": [
+        {
+          "atPage": 1,
+          "scene": "sitting up in bed hugging {companion}, watching a few fireflies blink outside the window"
+        },
+        {
+          "atPage": 4,
+          "scene": "stepping out of a warm lit back door into a night garden filled with drifting fireflies, {companion} held close"
+        },
+        {
+          "atPage": 8,
+          "scene": "sitting on soft grass surrounded by glowing fireflies while big flowers slowly close for the night, {companion} beside them"
+        },
+        {
+          "atPage": 11,
+          "scene": "asleep under a blanket on the porch step, fireflies hovering softly, {companion} tucked under their chin"
+        }
+      ]
+    },
+    {
+      "id": "moon",
+      "panels": [
+        "01.jpg",
+        "02.jpg",
+        "03.jpg",
+        "04.jpg"
+      ],
+      "beats": [
+        {
+          "atPage": 1,
+          "scene": "sitting up in bed hugging {companion}, looking through a round window at a big low moon"
+        },
+        {
+          "atPage": 4,
+          "scene": "stepping from the window sill onto a soft cloud, {companion} tucked under one arm, the bedroom glowing behind"
+        },
+        {
+          "atPage": 8,
+          "scene": "sitting high on a cloud beside an enormous gentle smiling moon with closed eyes, {companion} on their lap"
+        },
+        {
+          "atPage": 11,
+          "scene": "asleep curled on a cloud drifting back down towards the lit bedroom window, {companion} held close"
+        }
+      ]
+    },
+    {
+      "id": "train",
+      "panels": [
+        "01.jpg",
+        "02.jpg",
+        "03.jpg",
+        "04.jpg"
+      ],
+      "beats": [
+        {
+          "atPage": 1,
+          "scene": "sitting up in bed hugging {companion}, hearing a distant train whistle through the window"
+        },
+        {
+          "atPage": 4,
+          "scene": "stepping aboard a small warm-lit night train at a tiny country platform, {companion} under one arm"
+        },
+        {
+          "atPage": 8,
+          "scene": "INSIDE a cosy train carriage, sitting by a big window watching dark sleeping fields roll past, {companion} on the seat beside them, warm lamp overhead"
+        },
+        {
+          "atPage": 11,
+          "scene": "asleep in the train carriage seat under a blanket, {companion} held close, the dark window and a small lamp behind them"
+        }
+      ]
+    }
+  ]
+}

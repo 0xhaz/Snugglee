@@ -1,0 +1,23 @@
+{
+  "name": "snugglee-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "node --watch --experimental-strip-types src/index.ts",
+    "start": "node --experimental-strip-types src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "deploy:sg": "gcloud run deploy snugglee-api --source . --region=asia-southeast1 --min-instances=1 --allow-unauthenticated --project=snugglee-prod",
+    "deploy:us": "gcloud run deploy snugglee-api --source . --region=us-central1 --min-instances=1 --allow-unauthenticated --project=snugglee-prod"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.0",
+    "firebase-admin": "^13.0.2",
+    "hono": "^4.6.20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  }
+}
