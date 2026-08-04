@@ -50,6 +50,10 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "revenuecatIosKey": "",
+      "revenuecatAndroidKey": ""
     }
   }
 }

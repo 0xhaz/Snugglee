@@ -11,7 +11,7 @@
  */
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../src/components/AppText';
 import { Screen } from '../src/components/Screen';
@@ -93,6 +93,36 @@ export default function Privacy() {
         </Pressable>
       ) : null}
 
+      {/*
+        The full policy and terms live on the website. Apple requires a privacy
+        policy URL on the listing, and linking to the same canonical document
+        from inside the app means the two can never drift apart — which they
+        would if the text were maintained in both places.
+      */}
+      <View style={styles.links}>
+        <Pressable
+          onPress={() => void Linking.openURL('https://snugglee.app/privacy')}
+          style={styles.link}
+          accessibilityRole="link"
+        >
+          <AppText variant="body">Full privacy policy</AppText>
+          <AppText variant="caption" muted>
+            snugglee.app/privacy
+          </AppText>
+        </Pressable>
+
+        <Pressable
+          onPress={() => void Linking.openURL('https://snugglee.app/terms')}
+          style={styles.link}
+          accessibilityRole="link"
+        >
+          <AppText variant="body">Terms of use</AppText>
+          <AppText variant="caption" muted>
+            snugglee.app/terms
+          </AppText>
+        </Pressable>
+      </View>
+
       <Pressable
         onPress={() =>
           Alert.alert(
@@ -137,6 +167,15 @@ const styles = StyleSheet.create({
   header: { paddingTop: space.xl, paddingBottom: space.md },
   section: { marginBottom: space.xl },
   sectionBody: { marginTop: space.sm },
+  links: { marginBottom: space.xl, gap: space.sm },
+  link: {
+    backgroundColor: shell.surface,
+    borderRadius: radius.lg,
+    padding: space.lg,
+    minHeight: 60,
+    justifyContent: 'center',
+    gap: 2,
+  },
   danger: {
     backgroundColor: shell.surface,
     borderRadius: radius.lg,
