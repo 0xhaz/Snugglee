@@ -36,3 +36,8 @@ assets-pipeline/out/
 # logs
 *.log
 npm-debug.*
+
+# next
+web/.next/
+web/out/
+web/next-env.d.ts
