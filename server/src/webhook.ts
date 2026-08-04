@@ -18,14 +18,19 @@ import { config } from './config.ts';
 import { append } from './ledger.ts';
 
 /**
- * Credits granted per product. Must match the IAP products configured in
- * App Store Connect / Play Console (PAY-02). Pricing rationale lives in the
- * internal docs, not here.
+ * Credits granted per product.
+ *
+ * **Must match the IAP products in App Store Connect / Play Console exactly.**
+ * A product configured in the store but missing here is a purchase that takes
+ * a parent's money and grants nothing — the webhook logs it loudly and
+ * acknowledges, but the credits never arrive. Keep this list and the paywall
+ * in lockstep.
+ *
+ * Pricing rationale lives in the internal docs, not here.
  */
 const CREDITS_BY_PRODUCT: Record<string, number> = {
   'com.snugglee.credits.3': 3,
   'com.snugglee.credits.5': 5,
-  'com.snugglee.credits.10': 10,
   'com.snugglee.credits.20': 20,
 };
 
