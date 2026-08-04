@@ -37,7 +37,16 @@
         }
       ],
       "expo-localization",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 300,
+          "resizeMode": "contain",
+          "backgroundColor": "#2C2C4D"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
