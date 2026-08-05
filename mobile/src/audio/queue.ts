@@ -16,7 +16,8 @@
  *    cache directory, so replays cost nothing and work on a plane. The wedge is
  *    the absent parent, so the child is disproportionately not at home.
  */
-import { createAudioPlayer, type AudioPlayer } from 'expo-audio';
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import { Platform } from 'react-native';
 import { Directory, File, Paths } from 'expo-file-system';
 
 import { mark } from '../metrics';
@@ -179,6 +180,27 @@ export class StoryAudioQueue {
 
   async start() {
     this.stopped = false;
+
+    /**
+     * ⚠️ ANDROID-SPECIFIC. Without `shouldPlayInBackground`, Android stops
+     * playback roughly three minutes after the screen locks — which for a
+     * 12-page story means it dies partway through, every time, on the exact
+     * use case §8 calls first-class: phone face-down, dark room, voice only.
+     *
+     * iOS handles this from the UIBackgroundModes entitlement alone, so the
+     * bug is invisible on the platform most likely to be tested first.
+     */
+    try {
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: true,
+        interruptionMode: 'duckOthers',
+        ...(Platform.OS === 'android' ? { shouldRouteThroughEarpiece: false } : {}),
+      });
+    } catch {
+      // Non-fatal: playback still works foregrounded.
+    }
+
     await this.playPage(1);
   }
 

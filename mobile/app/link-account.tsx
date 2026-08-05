@@ -71,6 +71,17 @@ export default function LinkAccount() {
           anything.
         </AppText>
 
+        {/*
+          ⚠️ ANDROID GAP. Sign in with Apple is iOS-only, so on Android there is
+          currently NO way to link an account — and credits are consumables the
+          store will not restore. An Android parent who reinstalls loses a paid
+          balance permanently.
+
+          Google Sign-In is the fix and is not built yet. Until it is, be honest
+          rather than showing a dead end: tell them the balance is device-bound
+          and that support can help, instead of offering a button that cannot
+          appear.
+        */}
         {available ? (
           <AppleAuthentication.AppleAuthenticationButton
             buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
@@ -80,9 +91,15 @@ export default function LinkAccount() {
             onPress={() => void link()}
           />
         ) : (
-          <AppText variant="body" muted center style={styles.body}>
-            Sign in isn't available on this device.
-          </AppText>
+          <View>
+            <AppText variant="body" muted center style={styles.body}>
+              Signing in isn't available on this device yet — it's coming soon.
+            </AppText>
+            <AppText variant="caption" muted center style={styles.body}>
+              Until then your stories stay on this phone. If you change devices,
+              email hello@snugglee.app and we'll help move them across.
+            </AppText>
+          </View>
         )}
 
         {failed ? (
