@@ -13,9 +13,30 @@
  *
  * **Idempotency is mandatory. Webhooks retry.**
  */
+import { timingSafeEqual } from 'node:crypto';
+
 import type { Context } from 'hono';
 import { config } from './config.ts';
 import { append } from './ledger.ts';
+
+/**
+ * Constant-time comparison of the webhook secret.
+ *
+ * Tolerates an optional `Bearer ` prefix: RevenueCat's UI shows
+ * "e.g. Bearer Xz3aHxYNQFcdgRvb" as the placeholder, so the value gets pasted
+ * both ways in practice. Rejecting one of them produces a 401 on every event
+ * with nothing in the logs explaining why, and credits silently never arrive.
+ *
+ * timingSafeEqual rather than `!==` — a plain comparison leaks the secret one
+ * character at a time to anyone willing to measure.
+ */
+function authorised(header: string, secret: string): boolean {
+  const provided = header.startsWith('Bearer ') ? header.slice(7) : header;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(secret);
+  // Length differences are not secret — and timingSafeEqual throws on mismatch.
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 /**
  * Credits granted per product.
@@ -42,7 +63,10 @@ const REVOKING = new Set(['CANCELLATION', 'REFUND', 'EXPIRATION']);
 export async function revenuecatWebhook(c: Context) {
   // RevenueCat sends a shared secret on the Authorization header.
   const auth = c.req.header('authorization') ?? '';
-  if (auth !== config.revenuecat.webhookSecret()) {
+  if (!authorised(auth, config.revenuecat.webhookSecret())) {
+    // Logged so a misconfigured header is diagnosable — the value is never
+    // logged, only the fact that one arrived.
+    console.error('[revenuecat] rejected webhook: bad or missing Authorization');
     return c.json({ error: 'unauthorized' }, 401);
   }
 
