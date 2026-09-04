@@ -15,9 +15,10 @@ import { FieldValue, getFirestore, type Firestore } from 'firebase-admin/firesto
 
 export type LedgerReason =
   | 'purchase' // RevenueCat webhook, +credits
-  | 'story_consumed' // Custom Path story completed, -1
+  | 'welcome' // D-17, the free story every new account starts with
+  | 'story_consumed' // story started, -1
   | 'story_refund' // generation failed after debit, +1
-  | 'promo' // judge / promo code grant
+  | 'promo' // judge / reviewer / promo code grant
   | 'adjustment'; // manual, always with a note
 
 export type LedgerEntry = {
@@ -99,11 +100,40 @@ export async function history(userId: string, limit = 50) {
 }
 
 /**
- * Debit for a Custom Path story.
+ * D-17 — every account starts with one free story.
  *
- * Credits deduct on successful completion and refund automatically on
- * generation failure (techstacks.md §4). The story id is the idempotency key,
- * so a retried completion cannot double-charge.
+ * Granted lazily rather than at signup: the session is anonymous and created
+ * silently in the background (S-17, no account wall before value), so there is
+ * no "signup" moment to hook. Idempotent on the uid, so calling it on every
+ * balance read is safe and the grant happens exactly once.
+ *
+ * "Tune post-launch" (D-17) means this number moves. It is the only place it
+ * is written down in code.
+ */
+export const WELCOME_CREDITS = 1;
+
+export const grantWelcome = (userId: string) =>
+  append(
+    { userId, delta: WELCOME_CREDITS, reason: 'welcome', note: 'D-17 free story' },
+    `welcome:${userId}`,
+  );
+
+/**
+ * Debit for a story.
+ *
+ * **Charged at START, not on completion.** The docs originally said completion,
+ * but ECONOMICS §5 is explicit that a child asleep at page 4 is the product
+ * WORKING and the expected case — so charging on completion would make most
+ * stories free while we still pay the per-page TTS ($0.149 marginal on the
+ * Instant Path). The credit buys the telling, not the finishing.
+ *
+ * `refundForStory` covers the case where we take the credit and then fail to
+ * deliver. The story id is the idempotency key, so a retried start cannot
+ * double-charge.
+ *
+ * Throws `insufficient credits` when the balance would go negative — that is
+ * the paywall trigger, and it is enforced here rather than in the client
+ * because a client-side balance is trivially forged (D-03).
  */
 export const debitForStory = (userId: string, storyId: string) =>
   append(

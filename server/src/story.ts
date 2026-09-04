@@ -14,6 +14,9 @@
  */
 import { getFirestore } from 'firebase-admin/firestore';
 import { config } from './config.ts';
+import { textProvider } from './providers/gemini.ts';
+import { classify, pagePrompt, STORY_SYSTEM_PROMPT } from './safety.ts';
+import { personalise, type Skeleton } from './skeletons.ts';
 
 export type StoryPage = {
   n: number;
@@ -191,9 +194,210 @@ const REVEAL: Record<string, (c: string, t: string) => string> = {
   de: (c, t) => `Gute Nacht, ${c}. ${t} hat dich lieb.`,
 };
 
+/**
+ * Falls back per LANGUAGE, never per word.
+ *
+ * The previous fallback chain resolved the kinship term and the sentence
+ * independently, so a gap in one produced a hybrid: `es` + grandmother has no
+ * authored term, took the English "Granny", and emitted *"Buenas noches, Amir.
+ * Granny te quiere mucho."* Likewise `ms` + other gave *"Selamat malam, Amir. I
+ * sayang kamu."*
+ *
+ * Every non-English entry currently lacks `other`, and de/es/fr lack both
+ * grandparents — so this was not an edge case, it was most of the matrix.
+ *
+ * §4.2 is explicit that this line is spoken *as* the parent at the emotional
+ * peak. A clean English reveal is a small loss; a sentence that code-switches
+ * mid-clause in the parent's own cloned voice is a broken one. So an
+ * incomplete language degrades wholesale to English.
+ *
+ * The real fix is authoring the missing terms — but that needs a native
+ * speaker, not a plausible guess, for the same reason translation is banned
+ * above.
+ */
 export function revealLine(lang: string, childName: string, role: ParentRole): string {
-  const term = PARENT_TERM[lang]?.[role] ?? PARENT_TERM.en![role] ?? 'I';
-  return (REVEAL[lang] ?? REVEAL.en!)(childName, term);
+  const term = PARENT_TERM[lang]?.[role];
+  const sentence = REVEAL[lang];
+  if (!term || !sentence) {
+    return REVEAL.en!(childName, PARENT_TERM.en![role] ?? 'I');
+  }
+  return sentence(childName, term);
+}
+
+/* ------------------------- BE-08 page personalisation ---------------------- */
+
+/**
+ * How long the LLM and the classifier each get before we stop waiting.
+ *
+ * Pages 2+ are prefetched while the previous page narrates (~40s), so this is
+ * generous. It exists for the pathological case: a hung vendor call must not
+ * hold audio open, because the queue's buffering HOLD is covering it and a
+ * child is waiting in silence.
+ */
+const GENERATION_TIMEOUT_MS = 6_000;
+
+/** Stands in for the child's name everywhere an AI vendor can see the text. */
+const NAME_TOKEN = '{childName}';
+
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), ms)),
+  ]);
+}
+
+type CachedPage = { text: string; childName: string; source: 'llm' | 'template' };
+
+const pageCache = () => getFirestore().collection('story_pages');
+
+/**
+ * Cache key. Per STORY, not per skeleton+name.
+ *
+ * Keying on the skeleton and name instead would be cheaper — two families with
+ * an Amir would share generations — but it would also mean one child's story is
+ * literally another's. Per-story keeps each telling its own, and is what makes
+ * a replay free (design.md §4): the second play reads the cache rather than
+ * re-billing generation.
+ */
+const cacheKey = (storyId: string, n: number) => `${storyId}__${n}`;
+
+/**
+ * In-process dedup. The client fetches a page's TEXT and its AUDIO at nearly
+ * the same moment, and both resolve through here — without this they would
+ * both call the LLM for the same page and one would lose the write race,
+ * producing text that does not match what was narrated.
+ *
+ * Best-effort across instances; Firestore is the durable half. A duplicate
+ * generation costs ~$0.001, so a stricter transaction is not worth the latency.
+ */
+const inflight = new Map<string, Promise<string>>();
+
+/**
+ * The single source of truth for what page `n` says.
+ *
+ * **Both the text route and the audio route must call this.** They used to call
+ * `personalise()` independently, which was harmless while both were pure
+ * template interpolation — and would silently desynchronise the moment one of
+ * them started generating. The narrated words and the on-screen words have to
+ * be the same string.
+ */
+export async function resolvePageText(opts: {
+  storyId: string;
+  skeleton: Skeleton;
+  pageNumber: number;
+  childName: string;
+}): Promise<string | undefined> {
+  /**
+   * DATA MINIMISATION — the child's name never reaches the AI vendor.
+   *
+   * The page is sent for generation with the literal `{childName}` token still
+   * in place, and the real name is substituted only after the text comes back
+   * and has been classified. Google therefore receives an anonymous bedtime
+   * page; the only service that ever sees the name is the TTS vendor, which
+   * cannot avoid it because the name has to be spoken aloud.
+   *
+   * This is a privacy property, not an optimisation, and App Review 5.1.2(i)
+   * turns on exactly this question: what personal data is shared, and with whom.
+   * Keep it. Passing `opts.childName` into the prompt would silently undo it.
+   */
+  const anonymous = personalise(opts.skeleton, opts.pageNumber, NAME_TOKEN);
+  if (!anonymous) return undefined;
+
+  const withName = (text: string) => text.replaceAll(NAME_TOKEN, opts.childName);
+  const template = withName(anonymous);
+
+  /**
+   * RULE 1, absolute: page 1 is never generated. It has a 300ms budget and is
+   * the whole Day-0 thesis. An LLM call here is the single most likely way for
+   * this file to regress.
+   */
+  if (opts.pageNumber <= 1) return template;
+
+  /**
+   * A story id is required to cache, and caching is what keeps replays free.
+   * Older clients send a placeholder, so they get the authored text — the
+   * previous behaviour, degraded cleanly rather than billed repeatedly.
+   */
+  if (!opts.storyId || opts.storyId.length < 8) return template;
+
+  const key = cacheKey(opts.storyId, opts.pageNumber);
+
+  const running = inflight.get(key);
+  if (running) return running;
+
+  const task = (async () => {
+    try {
+      const snap = await pageCache().doc(key).get();
+      if (snap.exists) {
+        const hit = snap.data() as CachedPage;
+        // A renamed child invalidates: the name is inside the prose.
+        if (hit.childName === opts.childName && hit.text) return hit.text;
+      }
+    } catch {
+      // Cache unavailable is not a failure — generate and carry on.
+    }
+
+    let text = template;
+    let source: CachedPage['source'] = 'template';
+
+    try {
+      const gen = await withTimeout(
+        textProvider.generate({
+          system: STORY_SYSTEM_PROMPT,
+          prompt: pagePrompt({
+            skeletonPage: anonymous,
+            setting: opts.skeleton.setting,
+            companion: opts.skeleton.companion,
+            stretchWords: opts.skeleton.stretchWords ?? [],
+            pageNumber: opts.pageNumber,
+            pageCount: opts.skeleton.pageCount,
+          }),
+        }),
+        GENERATION_TIMEOUT_MS,
+        'generation',
+      );
+
+      const candidate = gen.text.trim();
+
+      /**
+       * SAFE-03 — classify BEFORE this reaches TTS, and fail closed.
+       *
+       * The fallback is the authored skeleton page: hand-written, already
+       * reviewed, and the exact text the illustration was drawn for. So a
+       * rejection costs personalisation and nothing else. A parent never sees
+       * an error and a child never hears one.
+       */
+      if (candidate) {
+        const verdict = await withTimeout(classify(candidate), GENERATION_TIMEOUT_MS, 'classifier');
+        /**
+         * The classifier also sees the anonymous text — one fewer service
+         * handling the name, and it has no bearing on whether a page is safe.
+         *
+         * A page that lost the token would be narrated without the child's name
+         * in it, which is the entire product. Fall back rather than ship that.
+         */
+        if (verdict.safe && candidate.includes(NAME_TOKEN)) {
+          text = withName(candidate);
+          source = 'llm';
+        }
+      }
+    } catch {
+      // Generation or classification failed. The template already holds.
+    }
+
+    try {
+      await pageCache()
+        .doc(key)
+        .set({ text, childName: opts.childName, source, at: Date.now() });
+    } catch {
+      // Unwritable cache costs a regeneration next time, nothing more.
+    }
+
+    return text;
+  })().finally(() => inflight.delete(key));
+
+  inflight.set(key, task);
+  return task;
 }
 
 /**

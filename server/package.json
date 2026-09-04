@@ -3,13 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "node --watch --experimental-strip-types src/index.ts",
     "start": "node --experimental-strip-types src/index.ts",
     "typecheck": "tsc --noEmit",
     "deploy:sg": "gcloud run deploy snugglee-api --source . --region=asia-southeast1 --min-instances=1 --allow-unauthenticated --project=snugglee-prod",
-    "deploy:us": "gcloud run deploy snugglee-api --source . --region=us-central1 --min-instances=1 --allow-unauthenticated --project=snugglee-prod"
+    "deploy:us": "gcloud run deploy snugglee-api --source . --region=us-central1 --min-instances=1 --allow-unauthenticated --project=snugglee-prod",
+    "promo": "node scripts/create-promo-code.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",

@@ -16,10 +16,17 @@ import { Hono } from 'hono';
 
 import { requireAuth } from './auth.ts';
 import { config } from './config.ts';
-import { getBalance, history } from './ledger.ts';
+import { debitForStory, getBalance, grantWelcome, history } from './ledger.ts';
+import { redeem } from './promo.ts';
 import { voiceProvider } from './providers/voice.ts';
-import { getSkeleton, listSkeletons, personalise } from './skeletons.ts';
-import { createManifest, generationCeiling, narrativeSafeEnding, recordAbandonment } from './story.ts';
+import { getSkeleton, listSkeletons } from './skeletons.ts';
+import {
+  createManifest,
+  generationCeiling,
+  narrativeSafeEnding,
+  recordAbandonment,
+  resolvePageText,
+} from './story.ts';
 import { revealLine } from './story.ts';
 import { deleteVoice, enrol, getVoice, type ParentRole } from './voice.ts';
 import { revenuecatWebhook } from './webhook.ts';
@@ -43,7 +50,14 @@ app.post('/webhooks/revenuecat', revenuecatWebhook);
 
 app.get('/credits', requireAuth, async (c) => {
   const { uid } = c.get('user');
-  return c.json({ balance: await getBalance(uid) });
+  /**
+   * D-17's free story is granted here, on the first balance read. There is no
+   * signup event to hook — the anonymous session is created silently (S-17) —
+   * and this is the first authenticated call every client makes. Idempotent on
+   * the uid, so repeat reads are a no-op.
+   */
+  const { balance } = await grantWelcome(uid);
+  return c.json({ balance });
 });
 
 app.get('/credits/history', requireAuth, async (c) => {
@@ -75,6 +89,9 @@ app.post('/story', requireAuth, async (c) => {
 
   if (!body?.childName?.trim()) return c.json({ error: 'childName required' }, 400);
 
+  // D-17 — idempotent, so a brand-new account has its free story here.
+  await grantWelcome(uid);
+
   const manifest = await createManifest({
     userId: uid,
     childName: body.childName.trim(),
@@ -84,7 +101,56 @@ app.post('/story', requireAuth, async (c) => {
     path: body.path ?? 'instant',
   });
 
+  /**
+   * The paywall, enforced server-side.
+   *
+   * D-03: a client-side balance is trivially forged, and this is the number
+   * that decides whether a story gets told. `debitForStory` throws when the
+   * balance would go negative; that 402 is what the client turns into the
+   * paywall. Charged at START — see the note on debitForStory.
+   *
+   * Debited AFTER the manifest exists so the story id is the idempotency key:
+   * a retried request re-uses the same id and cannot double-charge.
+   */
+  try {
+    await debitForStory(uid, manifest.storyId);
+  } catch {
+    return c.json({ error: 'insufficient_credits', balance: await getBalance(uid) }, 402);
+  }
+
   return c.json(manifest);
+});
+
+/* ---------------------------------- promo ---------------------------------- */
+
+/**
+ * Redeem a promo code. **SERVER-SIDE AND SUPPORT-ONLY.**
+ *
+ * ⚠️ DO NOT SURFACE THIS IN THE iOS CLIENT. Snugglee was rejected under
+ * Guideline 3.1.1 on 2026-08-26 for exactly that: an in-app redemption field
+ * unlocked paid digital content — credits, which are sold as consumable IAP —
+ * through a mechanism other than In-App Purchase. Apple's objection is not that
+ * the content was free, it is that a developer-run entitlement system ran
+ * parallel to IAP inside the shipped binary.
+ *
+ * It survives here for support: crediting a parent whose purchase failed, where
+ * the grant is made BY US rather than unlocked by the user in the app. Free or
+ * discounted access for users must come from Apple's own offer/promo codes.
+ */
+app.post('/promo/redeem', requireAuth, async (c) => {
+  const { uid } = c.get('user');
+  const body = await c.req.json<{ code?: string }>().catch(() => null);
+  if (!body?.code) return c.json({ error: 'code required' }, 400);
+
+  const result = await redeem(uid, body.code);
+  if (!result.ok) return c.json({ error: result.reason }, 404);
+
+  return c.json({
+    ok: true,
+    credits: result.credits,
+    balance: result.balance,
+    alreadyRedeemed: result.alreadyRedeemed,
+  });
 });
 
 /**
@@ -113,7 +179,14 @@ app.get('/story/:id/page/:n', requireAuth, async (c) => {
     );
   }
 
-  const text = personalise(skeleton, pageNumber, childName);
+  // Shared with the audio route below — the narrated words and the displayed
+  // words must be the same string. See resolvePageText().
+  const text = await resolvePageText({
+    storyId: c.req.param('id') ?? '',
+    skeleton,
+    pageNumber,
+    childName,
+  });
   if (!text) return c.json({ error: 'no such page' }, 404);
 
   return c.json({
@@ -140,7 +213,17 @@ app.get('/story/:id/page/:n/audio', requireAuth, async (c) => {
   const skeleton = getSkeleton(skeletonId);
   if (!skeleton) return c.json({ error: 'unknown theme' }, 404);
 
-  const text = personalise(skeleton, pageNumber, childName) ?? narrativeSafeEnding(childName);
+  /**
+   * Same resolver as the text route, so the two can never disagree. On a page
+   * the client has already displayed this is a cache hit, and costs nothing.
+   */
+  const text =
+    (await resolvePageText({
+      storyId: c.req.param('id') ?? '',
+      skeleton,
+      pageNumber,
+      childName,
+    })) ?? narrativeSafeEnding(childName);
 
   const result = await voiceProvider.synthesize({
     text,
