@@ -16,7 +16,7 @@ import {
 import { File } from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -68,6 +68,23 @@ const MIN_MS = 12_000;
 
 type Phase = 'idle' | 'recording' | 'tooShort' | 'uploading' | 'cloning' | 'failed' | 'done';
 
+/**
+ * Why the enrolment did not take.
+ *
+ * The copy stays gentle and non-technical (§2 — never a code, never a stack),
+ * but the CAUSES are kept apart, because they need different actions from the
+ * parent. Collapsing them into one "that did not quite take" left a parent
+ * retrying forever against a daily cap that no amount of retrying clears.
+ */
+type Failure = 'rateLimited' | 'tooQuiet' | 'network';
+
+const FAILURE_COPY: Record<Failure, string> = {
+  rateLimited:
+    'We have made a few voices today already. Your voice will keep — try again tomorrow.',
+  tooQuiet: 'That came through very quietly. Somewhere a little quieter, perhaps?',
+  network: 'That did not quite take. Shall we try once more?',
+};
+
 export default function Record() {
   const router = useRouter();
   const { childName, role } = useLocalSearchParams<{ childName: string; role: string }>();
@@ -76,6 +93,7 @@ export default function Record() {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const state = useAudioRecorderState(recorder);
   const [phase, setPhase] = useState<Phase>('idle');
+  const [failure, setFailure] = useState<Failure>('network');
   const [granted, setGranted] = useState<boolean | null>(null);
 
   const pulse = useSharedValue(0);
@@ -84,7 +102,13 @@ export default function Record() {
     (async () => {
       const perm = await AudioModule.requestRecordingPermissionsAsync();
       setGranted(perm.granted);
-      if (perm.granted) await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      if (perm.granted) {
+        try {
+          await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+        } catch {
+          // Non-fatal — recording usually still works; start() catches the rest.
+        }
+      }
     })();
   }, []);
 
@@ -106,12 +130,25 @@ export default function Record() {
 
   async function start() {
     setPhase('recording');
-    await recorder.prepareToRecordAsync();
-    recorder.record();
+    try {
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+    } catch {
+      // The recorder itself can refuse — another app holding the mic, or a
+      // session the OS tore down while we were backgrounded. Previously this
+      // rejected unhandled and left the screen stuck in 'recording' with a
+      // timer that never moved.
+      setFailure('network');
+      setPhase('failed');
+    }
   }
 
   async function stop() {
-    await recorder.stop();
+    try {
+      await recorder.stop();
+    } catch {
+      // Falls through to the uri check below, which handles a missing file.
+    }
     const uri = recorder.uri;
 
     if (elapsed < MIN_MS || !uri) {
@@ -129,9 +166,24 @@ export default function Record() {
       const res = await fetch(`${config.apiBaseUrl}/voice/enrol`, {
         method: 'POST',
         headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ sampleBase64: base64, role, lang: 'en', consent: true }),
+        /**
+         * The clone is tagged with the parent's own language, not 'en'. The
+         * vendor uses it to pick the acoustic model, and it is stored on the
+         * voice record so every later synthesis routes the same way.
+         *
+         * The enrolment script above is still English. SPIKE-02 confirmed a 15s
+         * English sample clones cross-lingually, so this is sound — but a
+         * per-language script is the better answer once those languages ship.
+         */
+        body: JSON.stringify({ sampleBase64: base64, role, lang: config.language, consent: true }),
       });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        // 429 is the daily clone cap (VOX-03); 400 is a sample the server would
+        // not accept. Neither is worth another identical retry.
+        setFailure(res.status === 429 ? 'rateLimited' : res.status === 400 ? 'tooQuiet' : 'network');
+        setPhase('failed');
+        return;
+      }
 
       // The local recording is deleted immediately. The server never stores it
       // either — only the voice_id (D-07).
@@ -144,8 +196,16 @@ export default function Record() {
       setPhase('done');
       router.replace({ pathname: '/reveal', params: { childName: name } });
     } catch {
+      // Pre-response: DNS, TLS, offline, or a body too large to serialise.
+      setFailure('network');
       setPhase('failed');
     }
+  }
+
+  /** Always available once something has gone wrong — see the render below. */
+  function leave() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/home');
   }
 
   if (granted === false) {
@@ -157,14 +217,38 @@ export default function Record() {
         <AppText variant="body" muted center style={styles.body}>
           Snugglee can only make your voice if it can hear it. You can turn this on in Settings.
         </AppText>
+        <Pressable onPress={leave} style={styles.leave} accessibilityRole="button">
+          <AppText variant="body" muted center>
+            Back to stories
+          </AppText>
+        </Pressable>
       </Screen>
     );
   }
 
+  // Nothing to retry on a daily cap — offering the button would just fail again.
+  const canRetry = phase === 'idle' || phase === 'tooShort' || (phase === 'failed' && failure !== 'rateLimited');
+  const stuck = phase === 'tooShort' || phase === 'failed';
+
   return (
-    <Screen center>
+    // `scroll` so the long enrolment script plus both buttons stay reachable on
+    // a small screen with the keyboard-free error states.
+    <Screen center scroll>
       <View style={styles.center}>
-        <Animated.View style={[styles.ring, ring]} />
+        {/*
+          The ring is a live indicator, not decoration: it pulses while
+          recording. In the settled error states it is a meaningless coloured
+          disc, so it goes — which is what made the failure screen look broken
+          rather than calm.
+        */}
+        {stuck ? null : (
+          <Animated.View style={[styles.ring, ring]}>
+            {/* Drawn rather than an icon font — the app ships no icon set. */}
+            <View style={styles.micCapsule} />
+            <View style={styles.micStem} />
+            <View style={styles.micBase} />
+          </Animated.View>
+        )}
 
         <AppText variant="subheading" bold center style={styles.script}>
           {phase === 'recording' || phase === 'idle' ? ENROLMENT_SCRIPT : ''}
@@ -178,16 +262,29 @@ export default function Record() {
           {phase === 'uploading' && 'Got it…'}
           {phase === 'cloning' && 'Making your voice…'}
           {/* Errors are never technical and never terminal (§2). */}
-          {phase === 'failed' && 'That did not quite take. Shall we try once more?'}
+          {phase === 'failed' && FAILURE_COPY[failure]}
         </AppText>
 
         {phase === 'recording' ? <View style={styles.track}><View style={[styles.fill, { width: `${progress * 100}%` }]} /></View> : null}
       </View>
 
-      {phase === 'idle' || phase === 'tooShort' || phase === 'failed' ? (
+      {canRetry ? (
         <PrimaryButton label={phase === 'idle' ? 'Start recording' : 'Try again'} onPress={start} />
       ) : phase === 'recording' ? (
         <PrimaryButton label="Done" onPress={stop} disabled={elapsed < MIN_MS} />
+      ) : null}
+
+      {/*
+        The way out. Without this the error state was a dead end: one button
+        that retried, and no way back to the stories — on a screen a parent
+        reaches at bedtime, having already been promised the story is over.
+      */}
+      {stuck ? (
+        <Pressable onPress={leave} style={styles.leave} accessibilityRole="button">
+          <AppText variant="body" muted center>
+            {failure === 'rateLimited' ? 'Back to stories' : 'Not tonight'}
+          </AppText>
+        </Pressable>
       ) : null}
     </Screen>
   );
@@ -201,7 +298,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: shell.accent,
     marginBottom: space.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  /* Microphone, drawn from three primitives. Sits on `accent`, so it uses the
+     ground colour for contrast rather than white-on-periwinkle. */
+  micCapsule: {
+    width: 20,
+    height: 36,
+    borderRadius: radius.pill,
+    backgroundColor: shell.background,
+  },
+  micStem: { width: 3, height: 10, backgroundColor: shell.background, marginTop: 4 },
+  micBase: { width: 26, height: 3, borderRadius: radius.pill, backgroundColor: shell.background },
   script: { marginBottom: space.lg },
   status: { minHeight: 56 },
   body: { marginTop: space.md },
@@ -214,4 +323,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fill: { height: '100%', backgroundColor: shell.accent },
+  leave: { marginTop: space.lg, padding: space.md, opacity: 0.7 },
 });

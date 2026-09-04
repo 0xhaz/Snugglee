@@ -28,6 +28,14 @@ export type QueueEvents = {
   onPageStart?: (n: number) => void;
   /** Fired when page n+1 is not ready and we are holding. Never a spinner. */
   onBuffering?: (n: number) => void;
+  /**
+   * Playback position within the current page, 0..1. Drives the player's text
+   * auto-scroll so the parent never has to touch the screen mid-story.
+   *
+   * Page-level, not word-level: the TTS returns an mp3 with no timing marks, so
+   * this is the finest sync available without a forced aligner.
+   */
+  onProgress?: (n: number, fraction: number) => void;
   onComplete?: () => void;
   /** Reported so abandonment can be recorded — the key business metric. */
   onAbandon?: (lastPageHeard: number) => void;
@@ -70,12 +78,27 @@ export class StoryAudioQueue {
    * SDK 57 uses the File/Directory/Paths API — `cacheDirectory` is gone.
    */
   /**
-   * Cache is keyed by voice as well as story. Without this, a story cached in
-   * the stock voice would be replayed after enrolment instead of being
-   * re-fetched in the parent's — silently serving the wrong voice forever.
+   * Cache is keyed by voice AND child name, not just story.
+   *
+   * Voice: without it, a story cached in the stock voice would be replayed
+   * after enrolment instead of re-fetched in the parent's — silently serving
+   * the wrong voice forever.
+   *
+   * Name: the child's name is spoken *inside* the audio, but the page text is
+   * rendered fresh from a query parameter on every play. Keyed on story alone,
+   * a renamed child gets new text saying "Princess" over cached audio saying
+   * "Amir" — the two disagreeing is worse than either being stale.
    */
   private dirFor() {
-    return new Directory(Paths.cache, 'stories', this.opts.storyId, this.opts.voiceId ?? 'stock');
+    // Filesystem-safe: names are free text and go into a path segment.
+    const who = this.opts.childName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'child';
+    return new Directory(
+      Paths.cache,
+      'stories',
+      this.opts.storyId,
+      this.opts.voiceId ?? 'stock',
+      who,
+    );
   }
 
   private fileFor(n: number) {
@@ -155,6 +178,27 @@ export class StoryAudioQueue {
     }
   }
 
+  /**
+   * Tears the current player down so it is actually SILENT, not merely freed.
+   *
+   * `remove()` is documented as "remove the player from memory to free up
+   * resources" — it says nothing about halting playback, and on iOS with
+   * `shouldPlayInBackground` the audio session outlives the release long
+   * enough to be heard. seek() has always paused first; stop() did not, which
+   * is why closing a story kept narrating.
+   */
+  private teardownPlayer() {
+    const p = this.player;
+    this.player = null;
+    if (!p) return;
+    try {
+      p.pause();
+      p.remove();
+    } catch {
+      /* already gone */
+    }
+  }
+
   /** Fetches page n if not already present or in flight. Deduped. */
   private ensure(n: number): Promise<string | null> {
     if (n > this.opts.pageCount) return Promise.resolve(null);
@@ -179,7 +223,12 @@ export class StoryAudioQueue {
   }
 
   async start() {
-    this.stopped = false;
+    /**
+     * `stopped` is deliberately NOT reset here. A queue is single-use — one per
+     * player mount — and clearing the flag would resurrect a queue that stop()
+     * had already torn down, which is the whole class of bug fixed below.
+     */
+    if (this.stopped) return;
 
     /**
      * ⚠️ ANDROID-SPECIFIC. Without `shouldPlayInBackground`, Android stops
@@ -205,7 +254,15 @@ export class StoryAudioQueue {
   }
 
   private async playPage(n: number): Promise<void> {
-    if (this.stopped || n > this.opts.pageCount) {
+    /**
+     * A torn-down queue is silent, and silently so. Firing onComplete here
+     * would tell the player the story ENDED when in fact the parent closed it —
+     * which triggers the narrative-safe ending and the voice hook on a screen
+     * that is already being unmounted.
+     */
+    if (this.stopped) return;
+
+    if (n > this.opts.pageCount) {
       this.opts.events?.onComplete?.();
       return;
     }
@@ -216,6 +273,14 @@ export class StoryAudioQueue {
       // Not ready. Hold rather than stop — rule 2.
       this.opts.events?.onBuffering?.(n);
       uri = await this.ensure(n);
+      /**
+       * stop() may have run while that download was in flight. Without this
+       * check the teardown is silently undone a few lines below: a fresh
+       * AudioPlayer is created and played over whatever the next screen has
+       * already started, so closing a story leaves it narrating and opening a
+       * second story plays both at once.
+       */
+      if (this.stopped) return;
     }
 
     if (!uri) {
@@ -229,7 +294,7 @@ export class StoryAudioQueue {
     this.opts.events?.onPageStart?.(n);
     this.topUp(n);
 
-    this.player?.remove();
+    this.teardownPlayer();
     try {
       this.player = createAudioPlayer({ uri });
     } catch {
@@ -252,6 +317,10 @@ export class StoryAudioQueue {
       this.resolveCurrent = finish;
 
       const sub = this.player?.addListener('playbackStatusUpdate', (status) => {
+        // `duration` is 0 until the decoder has read the header.
+        if (status.duration > 0 && !status.didJustFinish) {
+          this.opts.events?.onProgress?.(n, Math.min(status.currentTime / status.duration, 1));
+        }
         if (status.didJustFinish) {
           sub?.remove();
           finish();
@@ -260,6 +329,9 @@ export class StoryAudioQueue {
       this.player?.play();
       if (n === 1) mark('first_audio');
     });
+
+    // stop() settles the promise above by design, so re-check before recursing.
+    if (this.stopped) return;
 
     const next = this.jumpTo ?? n + 1;
     this.jumpTo = null;
@@ -285,18 +357,22 @@ export class StoryAudioQueue {
   seek(n: number) {
     if (n < 1 || n > this.opts.pageCount) return;
     this.jumpTo = n;
-    this.player?.pause();
-    this.player?.remove();
-    this.player = null;
+    this.teardownPlayer();
     this.resolveCurrent?.();
   }
 
-  /** Call when the player is torn down — records how far the child got. */
+  /**
+   * Call when the player is torn down — records how far the child got.
+   *
+   * Idempotent: React can run an effect cleanup more than once (StrictMode, a
+   * fast unmount/remount), and onAbandon posting twice would double-count the
+   * one metric the business actually runs on.
+   */
   stop() {
+    if (this.stopped) return;
     this.stopped = true;
     this.resolveCurrent?.();
-    this.player?.remove();
-    this.player = null;
+    this.teardownPlayer();
     if (this.current > 0) this.opts.events?.onAbandon?.(this.current);
   }
 }
