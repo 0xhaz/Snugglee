@@ -10,28 +10,98 @@ _internal/
 # dependencies
 node_modules/
 
-# secrets — vendor keys live here and must never be committed.
-# All vendor calls proxy through the backend: no API keys in the client, ever.
+# ─────────────────────────────────────────────────────────────────────────────
+# SECRETS — never commit
+# ─────────────────────────────────────────────────────────────────────────────
+# Vendor keys live in the environment (Secret Manager in production). All vendor
+# calls proxy through the backend: no API keys in the client, ever.
+#
+# These patterns are deliberately repeated from mobile/.gitignore rather than
+# delegated to it. A nested ignore only protects its own subtree, so a key moved
+# or downloaded one directory up would have been committable. Signing material
+# is exactly the kind of file that gets dragged around while chasing a build.
 .env
 .env.*
 !.env.example
 *-service-account.json
 *-credentials.json
 
+# Apple signing + App Store Connect. `.p8` is the ASC API key: it can upload
+# builds and read sales data, and Apple issues it exactly once.
+*.p8
+*.p12
+*.pem
+*.cer
+*.certSigningRequest
+*.mobileprovision
+
+# Android signing. Losing or leaking the upload keystore means Google-assisted
+# key reset before you can ship an update.
+*.jks
+*.keystore
+*.key
+
+# Google / Firebase credentials
+*firebase-adminsdk*.json
+gha-creds-*.json
+.firebase/
+.gcloud/
+
+# Firebase CLIENT config is deliberately NOT ignored.
+#
+# `google-services.json` and `GoogleService-Info.plist` are required at BUILD
+# time by the Google Sign-In config plugin, and EAS uploads the project honouring
+# this file — so ignoring them makes the native build fail with a missing-file
+# error that reads like a plugin bug.
+#
+# They are safe to commit for the same reason the Firebase web config is already
+# committed in mobile/src/session.ts: they contain public client identifiers, not
+# credentials. What protects the data is Firestore Security Rules (see
+# firestore.rules — currently deny-all) and server-side token verification.
+#
+# A SERVICE ACCOUNT json is a different thing entirely and stays ignored above.
+
 # build output
 dist/
 build/
 .expo/
+.eas/
+coverage/
+*.tsbuildinfo
+.turbo/
+.vercel/
+
+# compiled app binaries — large, and rebuildable from source
+*.ipa
+*.aab
+*.apk
+*.app.zip
 
 # generated art — large, and reproducible from the pipeline
 assets-pipeline/out/
 
-# generated audio / spike artefacts
+# ─────────────────────────────────────────────────────────────────────────────
+# AUDIO — generated artefacts AND recorded voice samples
+# ─────────────────────────────────────────────────────────────────────────────
+# D-07: a parent's enrolment sample is used once and dropped. It is never
+# stored server-side and must never reach the repo either — a committed sample
+# is biometric data with no expiry and no way to recall it. `.m4a` is what the
+# iOS recorder writes, so it matters most.
 *.mp3
 *.wav
+*.m4a
+*.aac
+*.caf
 
-# macOS
+# macOS / editors
 .DS_Store
+Thumbs.db
+.idea/
+*.orig
+*.rej
+
+# local machine state — paths and permissions specific to one checkout
+.claude/settings.local.json
 
 # logs
 *.log
