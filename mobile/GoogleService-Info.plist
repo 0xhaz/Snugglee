@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>75574145355-156pmdan1sqhgegn0gl17j5fdaf9988b.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.75574145355-156pmdan1sqhgegn0gl17j5fdaf9988b</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAXW5zEUlh6vkEIUw7TccHH9rvr2MLd30o</string>
+	<key>GCM_SENDER_ID</key>
+	<string>75574145355</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.snugglee.app</string>
+	<key>PROJECT_ID</key>
+	<string>snugglee-prod</string>
+	<key>STORAGE_BUCKET</key>
+	<string>snugglee-prod.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:75574145355:ios:627dabbc7fb2df58e3b8ce</string>
+</dict>
+</plist>

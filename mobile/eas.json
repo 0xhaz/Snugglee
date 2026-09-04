@@ -28,7 +28,9 @@
     "production": {
       "ios": {
         "appleTeamId": "ZA858MV39E",
-        "bundleIdentifier": "com.snugglee.app"
+        "bundleIdentifier": "com.snugglee.app",
+
+        "ascAppId": "6797722971"
       }
     }
   }

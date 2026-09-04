@@ -16,16 +16,26 @@
  * Real secrets live in Secret Manager and never reach the client
  * (techstacks.md §1).
  */
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
+import { Platform } from 'react-native';
 import { getApps, initializeApp } from 'firebase/app';
 import {
+  GoogleAuthProvider,
   OAuthProvider,
   getAuth,
   linkWithCredential,
   onAuthStateChanged,
   signInAnonymously,
   signInWithCredential,
+  type AuthCredential,
   type User,
 } from 'firebase/auth';
 
@@ -84,6 +94,105 @@ export const isLinked = () =>
 export const canUseApple = () => AppleAuthentication.isAvailableAsync();
 
 /**
+ * Attaches a credential to the CURRENT session, or signs in to the account that
+ * already owns it.
+ *
+ * `linkWithCredential` preserves the same uid, so the ledger needs no migration
+ * and no credits move — that is the whole reason for anonymous-then-link.
+ *
+ * `credential-already-in-use` is the reinstall case: this identity is attached
+ * to an account that already exists, and THAT account holds the credits. Signing
+ * in to it is the recovery. Treating it as an error would strand the money.
+ *
+ * Shared by both providers so this rule lives in exactly one place.
+ */
+async function linkOrSignIn(
+  credential: AuthCredential,
+): Promise<{ linked: true } | { linked: false; reason: string }> {
+  const user = await ensureSession();
+  try {
+    await linkWithCredential(user, credential);
+    return { linked: true };
+  } catch (err) {
+    if ((err as { code?: string })?.code === 'auth/credential-already-in-use') {
+      await signInWithCredential(auth, credential);
+      return { linked: true };
+    }
+    throw err;
+  }
+}
+
+/* ---------------------------------- google --------------------------------- */
+
+/**
+ * Public OAuth client IDs, like the Firebase config above — they identify the
+ * project, they do not authorise anything. The WEB client id is the one that
+ * matters: Google only mints an `idToken` (which is what Firebase verifies)
+ * when it is set. Configuring only the iOS id yields a silent sign-in that
+ * Firebase then rejects.
+ */
+const GOOGLE_WEB_CLIENT_ID = Constants.expoConfig?.extra?.googleWebClientId as string | undefined;
+const GOOGLE_IOS_CLIENT_ID = Constants.expoConfig?.extra?.googleIosClientId as string | undefined;
+
+let googleConfigured = false;
+
+function configureGoogle() {
+  if (googleConfigured) return;
+  GoogleSignin.configure({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    ...(GOOGLE_IOS_CLIENT_ID ? { iosClientId: GOOGLE_IOS_CLIENT_ID } : {}),
+    // No server-side Google API calls — we only ever want the identity.
+    offlineAccess: false,
+  });
+  googleConfigured = true;
+}
+
+/** False until the client ids are filled in, so the UI can stay honest. */
+export const canUseGoogle = () => Boolean(GOOGLE_WEB_CLIENT_ID);
+
+/**
+ * S-17 on Android — links the anonymous session to a Google account.
+ *
+ * **This is the Android half of the only thing protecting purchased credits.**
+ * Credits are consumables, and consumables cannot be restored by either store.
+ * The ledger is the sole record that someone paid and it is keyed to a Firebase
+ * uid that, while anonymous, dies with the install. Sign in with Apple covers
+ * iOS; without this, an Android parent who reinstalls loses a paid balance
+ * permanently and has no recourse.
+ */
+export async function linkGoogle(): Promise<{ linked: true } | { linked: false; reason: string }> {
+  if (!GOOGLE_WEB_CLIENT_ID) return { linked: false, reason: 'not configured' };
+
+  try {
+    configureGoogle();
+
+    // Android only — iOS has no Play Services and the call throws there.
+    if (Platform.OS === 'android') {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    }
+
+    const response = await GoogleSignin.signIn();
+    // v13+ reports a user backing out as a RESULT, not a thrown error.
+    if (!isSuccessResponse(response)) return { linked: false, reason: 'cancelled' };
+
+    const idToken = response.data?.idToken;
+    // Almost always a missing or mismatched webClientId — see above.
+    if (!idToken) return { linked: false, reason: 'no identity token' };
+
+    return await linkOrSignIn(GoogleAuthProvider.credential(idToken));
+  } catch (err) {
+    if (isErrorWithCode(err)) {
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) return { linked: false, reason: 'cancelled' };
+      if (err.code === statusCodes.IN_PROGRESS) return { linked: false, reason: 'cancelled' };
+      if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        return { linked: false, reason: 'no play services' };
+      }
+    }
+    return { linked: false, reason: 'failed' };
+  }
+}
+
+/**
  * S-17 — links the anonymous session to an Apple ID.
  *
  * **This is the only thing protecting purchased credits.** Credits are
@@ -120,24 +229,8 @@ export async function linkApple(): Promise<{ linked: true } | { linked: false; r
     const provider = new OAuthProvider('apple.com');
     const oauth = provider.credential({ idToken: credential.identityToken, rawNonce });
 
-    const user = await ensureSession();
-    try {
-      await linkWithCredential(user, oauth);
-      return { linked: true };
-    } catch (err) {
-      /**
-       * `credential-already-in-use` means this Apple ID is already attached to
-       * another account — typically the parent reinstalled and is signing back
-       * in. Sign in to THAT account rather than failing: its ledger is the one
-       * holding their credits.
-       */
-      const code = (err as { code?: string })?.code ?? '';
-      if (code === 'auth/credential-already-in-use') {
-        await signInWithCredential(auth, oauth);
-        return { linked: true };
-      }
-      throw err;
-    }
+    // Shared with Google — including the reinstall recovery. See linkOrSignIn.
+    return await linkOrSignIn(oauth);
   } catch (err) {
     const code = (err as { code?: string })?.code ?? '';
     // The parent cancelling is not an error and must not surface as one.

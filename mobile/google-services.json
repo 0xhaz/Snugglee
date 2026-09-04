@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "75574145355",
+    "project_id": "snugglee-prod",
+    "storage_bucket": "snugglee-prod.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:75574145355:android:77b823a45d1f465ee3b8ce",
+        "android_client_info": {
+          "package_name": "com.snugglee.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "75574145355-rc5vgv8l2i22rlq7ksgvkjn8prq3cmqb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.snugglee.app",
+            "certificate_hash": "a4f8292075e07ef6ca205969892c63929322d740"
+          }
+        },
+        {
+          "client_id": "75574145355-te5aj4gbppspi073g5dth8nq7emh25st.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBr6RNZUwVbCq0zxQ_COG0PyLb1W_tykOI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "75574145355-te5aj4gbppspi073g5dth8nq7emh25st.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "75574145355-156pmdan1sqhgegn0gl17j5fdaf9988b.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.snugglee.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

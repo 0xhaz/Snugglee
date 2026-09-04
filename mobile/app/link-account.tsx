@@ -18,18 +18,19 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { AppText } from '../src/components/AppText';
 import { Screen } from '../src/components/Screen';
-import { canUseApple, linkApple } from '../src/session';
+import { canUseApple, canUseGoogle, linkApple, linkGoogle } from '../src/session';
 import { radius, shell, space } from '../src/theme/tokens';
 
 export default function LinkAccount() {
   const router = useRouter();
   const { balance } = useLocalSearchParams<{ balance?: string }>();
   const [available, setAvailable] = useState(false);
+  const googleAvailable = canUseGoogle();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -53,6 +54,19 @@ export default function LinkAccount() {
     if (result.reason !== 'cancelled') setFailed(true);
   }
 
+  async function linkWithGoogle() {
+    setBusy(true);
+    setFailed(false);
+    const result = await linkGoogle();
+    setBusy(false);
+
+    if (result.linked) {
+      router.back();
+      return;
+    }
+    if (result.reason !== 'cancelled') setFailed(true);
+  }
+
   return (
     <Screen center scroll>
       <Animated.View entering={FadeIn.duration(500)}>
@@ -72,15 +86,9 @@ export default function LinkAccount() {
         </AppText>
 
         {/*
-          ⚠️ ANDROID GAP. Sign in with Apple is iOS-only, so on Android there is
-          currently NO way to link an account — and credits are consumables the
-          store will not restore. An Android parent who reinstalls loses a paid
-          balance permanently.
-
-          Google Sign-In is the fix and is not built yet. Until it is, be honest
-          rather than showing a dead end: tell them the balance is device-bound
-          and that support can help, instead of offering a button that cannot
-          appear.
+          Apple first on iOS. Guideline 4.8 requires Sign in with Apple wherever
+          a third-party sign-in is offered, and ordering it first is the
+          convention reviewers expect.
         */}
         {available ? (
           <AppleAuthentication.AppleAuthenticationButton
@@ -90,7 +98,34 @@ export default function LinkAccount() {
             style={styles.appleButton}
             onPress={() => void link()}
           />
-        ) : (
+        ) : null}
+
+        {/*
+          Google covers Android, where Apple sign-in does not exist — and this
+          is the ONLY thing standing between an Android parent and permanently
+          losing a paid balance on reinstall, since consumables are not
+          restorable. Also offered on iOS for parents who live in a Google
+          account.
+        */}
+        {googleAvailable ? (
+          <Pressable
+            onPress={() => void linkWithGoogle()}
+            disabled={busy}
+            style={({ pressed }) => [styles.googleButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Continue with Google"
+          >
+            <AppText variant="body" bold center style={styles.googleLabel}>
+              Continue with Google
+            </AppText>
+          </Pressable>
+        ) : null}
+
+        {/*
+          Neither provider usable — an Android build whose Google client ids are
+          not configured yet. Be honest rather than showing a dead end.
+        */}
+        {!available && !googleAvailable ? (
           <View>
             <AppText variant="body" muted center style={styles.body}>
               Signing in isn't available on this device yet — it's coming soon.
@@ -100,7 +135,7 @@ export default function LinkAccount() {
               email hello@snugglee.app and we'll help move them across.
             </AppText>
           </View>
-        )}
+        ) : null}
 
         {failed ? (
           <AppText variant="caption" center style={{ color: shell.accentWarm }}>
@@ -127,5 +162,18 @@ export default function LinkAccount() {
 const styles = StyleSheet.create({
   body: { marginTop: space.lg },
   appleButton: { width: '100%', height: 56, marginTop: space.xl },
+  // Google's brand guidelines want a light surface with dark text; that also
+  // reads correctly against this app's dark ground.
+  googleButton: {
+    width: '100%',
+    height: 56,
+    marginTop: space.md,
+    borderRadius: radius.pill,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleLabel: { color: '#1F1F1F' },
+  pressed: { opacity: 0.7 },
   later: { marginTop: space.lg, padding: space.md, opacity: 0.7 },
 });

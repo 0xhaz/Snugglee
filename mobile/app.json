@@ -11,7 +11,11 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.snugglee.app",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.snugglee.app",
@@ -21,7 +25,14 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -46,14 +57,28 @@
           "resizeMode": "contain",
           "backgroundColor": "#2C2C4D"
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "revenuecatIosKey": "appl_NTFXTbBedcaFRtYmIHkNtrXYSmG",
-      "revenuecatAndroidKey": ""
+      "revenuecatAndroidKey": "",
+      "router": {},
+      "eas": {
+        "projectId": "7df575ce-8275-4586-ac52-a452ff469d35"
+      },
+      "googleWebClientId": "75574145355-te5aj4gbppspi073g5dth8nq7emh25st.apps.googleusercontent.com",
+      "googleIosClientId": "75574145355-156pmdan1sqhgegn0gl17j5fdaf9988b.apps.googleusercontent.com"
+    },
+    "owner": "0xhaz",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7df575ce-8275-4586-ac52-a452ff469d35"
     }
   }
 }
