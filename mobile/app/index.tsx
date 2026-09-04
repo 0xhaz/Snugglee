@@ -17,7 +17,7 @@ import { AppText } from '../src/components/AppText';
 import { PrimaryButton } from '../src/components/PrimaryButton';
 import { Screen } from '../src/components/Screen';
 import { mark } from '../src/metrics';
-import { getChild, setChild } from '../src/store';
+import { addChild, getChild } from '../src/store';
 import { ensureSession } from '../src/session';
 import { radius, shell, space, type } from '../src/theme/tokens';
 
@@ -49,7 +49,8 @@ export default function NameCapture() {
   const go = () => {
     if (!valid) return;
     // Stored locally, never sent to the server — D-13 keeps child data minimal.
-    void setChild({ name: trimmed });
+    // This is the household's first child; siblings are added from the profile.
+    void addChild(trimmed);
     router.push({ pathname: '/themes', params: { childName: trimmed } });
   };
 

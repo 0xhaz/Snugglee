@@ -31,6 +31,7 @@ export default function Home() {
   const [name, setName] = useState('');
   const [stories, setStories] = useState<StoryRecord[]>([]);
   const [credits, setCredits] = useState<number | null>(null);
+  const [enrolled, setEnrolled] = useState<boolean | null>(null);
 
   // Refresh on focus — returning from a story should show it immediately.
   useFocusEffect(
@@ -44,13 +45,16 @@ export default function Home() {
 
         try {
           const token = await getIdToken();
-          const res = await fetch(`${config.apiBaseUrl}/credits`, {
-            headers: { authorization: `Bearer ${token}` },
-          });
-          const json = (await res.json()) as { balance: number };
-          if (alive) setCredits(json.balance);
+          const headers = { authorization: `Bearer ${token}` };
+          const [balance, voice] = await Promise.all([
+            fetch(`${config.apiBaseUrl}/credits`, { headers }).then((r) => r.json()),
+            fetch(`${config.apiBaseUrl}/voice`, { headers }).then((r) => r.json()),
+          ]);
+          if (!alive) return;
+          setCredits((balance as { balance: number }).balance);
+          setEnrolled((voice as { enrolled: boolean }).enrolled);
         } catch {
-          /* balance is informational here, never blocking */
+          /* both are informational here, never blocking */
         }
       })();
       return () => {
@@ -65,19 +69,70 @@ export default function Home() {
         <AppText variant="title" bold>
           {name ? `${name}'s stories` : 'Stories'}
         </AppText>
-        {credits !== null ? (
+
+        {/*
+          Profile lives behind a single quiet mark rather than a nav bar. §5
+          rejects a five-tab bottom bar because it implies a catalogue — but it
+          does not ask for the settings to be unreachable, which is what a lone
+          "Privacy" link at the very bottom amounted to.
+        */}
+        <Pressable
+          onPress={() => router.push('/profile')}
+          style={({ pressed }) => [styles.avatar, pressed && styles.rowPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Profile and settings"
+        >
+          <AppText variant="body" bold>
+            {name ? name.trim().charAt(0).toUpperCase() : '·'}
+          </AppText>
+        </Pressable>
+      </View>
+
+      {credits !== null ? (
+        <View style={styles.quick}>
           <Pressable onPress={() => router.push('/credits')} accessibilityRole="button">
             <AppText variant="body" muted>
               {credits} {credits === 1 ? 'story' : 'stories'} left
             </AppText>
           </Pressable>
-        ) : null}
-      </View>
+          {/* Purchase always goes via the gate (§4, S-14) — never straight in. */}
+          <Pressable
+            onPress={() => router.push({ pathname: '/parental-gate', params: { next: '/paywall' } })}
+            accessibilityRole="button"
+          >
+            <AppText variant="body" style={styles.quickAction}>
+              Get more
+            </AppText>
+          </Pressable>
+        </View>
+      ) : null}
 
       <PrimaryButton
         label="Tonight's story"
         onPress={() => router.push({ pathname: '/themes', params: { childName: name } })}
       />
+
+      {/*
+        D-06 / §2 — the voice ask NEVER precedes the story. That rule is about
+        the first story, not about the rest of the parent's life: once they have
+        heard one, enrolment stops being a toll and becomes a feature they
+        cannot currently find, because S-04 fires once and never returns.
+        So this appears only after a story exists, and disappears once enrolled.
+      */}
+      {stories.length > 0 && enrolled === false ? (
+        <Pressable
+          onPress={() => router.push({ pathname: '/consent', params: { childName: name } })}
+          style={({ pressed }) => [styles.voiceRow, pressed && styles.rowPressed]}
+          accessibilityRole="button"
+        >
+          <AppText variant="body" bold center>
+            Use your own voice
+          </AppText>
+          <AppText variant="caption" muted center style={styles.voiceHint}>
+            Read one short passage, and {name || 'your child'} hears the story in your voice
+          </AppText>
+        </Pressable>
+      ) : null}
 
       {stories.length === 0 ? (
         <Animated.View entering={FadeIn.delay(300)} style={styles.empty}>
@@ -145,6 +200,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: space.md,
   },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: shell.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quick: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: space.lg,
+  },
+  quickAction: { color: shell.accent },
+  voiceRow: {
+    marginTop: space.lg,
+    paddingVertical: space.md,
+    paddingHorizontal: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: shell.surface,
+  },
+  // `textMuted`, not `cloud` — body copy on `raised` fails AA in the accents.
+  voiceHint: { marginTop: space.xs },
   empty: { marginTop: space.xxl, paddingHorizontal: space.lg },
   list: { marginTop: space.xxl },
   listLabel: { marginBottom: space.md, textTransform: 'uppercase', letterSpacing: 1 },

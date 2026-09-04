@@ -26,6 +26,7 @@ const REASON_COPY: Record<string, string> = {
   purchase: 'Credits added',
   story_consumed: 'Story made',
   story_refund: 'Refunded — that story did not finish',
+  welcome: 'Your first story, on us',
   promo: 'Gift',
   adjustment: 'Adjustment',
 };
