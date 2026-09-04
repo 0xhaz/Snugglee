@@ -80,6 +80,15 @@ const FAQ = [
   },
 ];
 
+/**
+ * Live on the App Store since 2026-09-04.
+ *
+ * Android is NOT live yet — Play still needs its first manual release — so
+ * every piece of copy on this page says iPhone now and Android later. Claiming
+ * both would send Android visitors to a store listing that does not exist.
+ */
+const APP_STORE_URL = "https://apps.apple.com/us/app/snugglee/id6797722971";
+
 export default function Home() {
   return (
     <>
@@ -134,17 +143,26 @@ export default function Home() {
                 honest element anyway.
               */}
               <a
-                href="#how"
+                href={APP_STORE_URL}
+                target="_blank"
+                rel="noopener"
                 className={buttonVariants({
                   size: "lg",
                   className:
                     "h-14 rounded-full bg-[#9AA5D1] px-8 text-base font-bold text-[#2C2C4D] hover:bg-[#B8C0E0]",
                 })}
               >
+                Download on the App Store
+              </a>
+              {/* Demoted to secondary now that there is somewhere to send people. */}
+              <a
+                href="#how"
+                className="text-base font-semibold text-[#B8C0E0] underline-offset-4 hover:text-white hover:underline"
+              >
                 See how it works
               </a>
-              <span className="text-sm text-[#8F9AC6]">
-                Coming to iPhone and Android
+              <span className="w-full text-sm text-[#8F9AC6]">
+                On iPhone and iPad. Android coming soon.
               </span>
             </motion.div>
 
@@ -396,7 +414,7 @@ export default function Home() {
             transition={{ duration: 0.9, delay: 0.2, ease }}
             className="mt-5 leading-relaxed text-[#B8C0E0]"
           >
-            Snugglee is coming to iPhone and Android.
+            Snugglee is on the App Store now. Android is on its way.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 14 }}
@@ -406,15 +424,30 @@ export default function Home() {
             className="mt-9"
           >
             <a
-              href="mailto:hello@snugglee.app?subject=Tell%20me%20when%20Snugglee%20launches"
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener"
               className={buttonVariants({
                 size: "lg",
                 className:
                   "h-14 rounded-full bg-[#F2D18F] px-9 text-base font-bold text-[#2C2C4D] hover:bg-[#F7DFAC]",
               })}
             >
-              Tell me when it launches
+              Download on the App Store
             </a>
+            {/*
+              The waitlist survives, narrowed to Android. Someone on a Pixel
+              still has nothing to download, and a dead-end page is a lost user.
+            */}
+            <p className="mt-6 text-sm text-[#8F9AC6]">
+              On Android?{" "}
+              <a
+                href="mailto:hello@snugglee.app?subject=Tell%20me%20when%20Snugglee%20is%20on%20Android"
+                className="underline hover:text-white"
+              >
+                Tell me when it lands
+              </a>
+            </p>
           </motion.div>
           <p className="mt-10 text-sm text-[#8F9AC6]">
             <Link href="/privacy" className="underline hover:text-white">
