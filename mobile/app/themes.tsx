@@ -10,7 +10,8 @@
  * per theme rather than chosen: the art is rendered per skeleton, and every
  * combination would need its own set.
  */
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -18,6 +19,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '../src/components/AppText';
 import { Screen } from '../src/components/Screen';
 import { mark, resetRun } from '../src/metrics';
+import { getAiConsent } from '../src/store';
 import { STORY_ART } from '../src/stories/art';
 import { radius, shell, space } from '../src/theme/tokens';
 
@@ -31,6 +33,26 @@ const THEMES = [
 export default function ThemePicker() {
   const router = useRouter();
   const { childName } = useLocalSearchParams<{ childName: string }>();
+
+  /**
+   * Guideline 5.1.1(i) — permission BEFORE any personal data is shared.
+   *
+   * Gated here rather than at each caller: S-01 and the home screen both lead
+   * to the theme picker, and this is the last screen before a story exists.
+   * Redirects rather than blocks, so an existing install upgrading into this
+   * build is asked once and then never again.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      void getAiConsent().then((c) => {
+        if (alive && !c) router.replace('/ai-notice');
+      });
+      return () => {
+        alive = false;
+      };
+    }, [router]),
+  );
   const name = childName ?? 'your child';
 
   const pick = (id: string) => {

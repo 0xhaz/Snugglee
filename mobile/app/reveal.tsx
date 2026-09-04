@@ -61,7 +61,12 @@ export default function Reveal() {
     (async () => {
       try {
         const token = await getIdToken();
-        const url = `${config.apiBaseUrl}/voice/reveal?childName=${encodeURIComponent(name)}&lang=en`;
+        // D-06's emotional peak, in the parent's own language. The server holds
+        // authored reveal lines per language and falls back to English itself,
+        // so an unrecognised code degrades rather than fails.
+        const url =
+          `${config.apiBaseUrl}/voice/reveal?childName=${encodeURIComponent(name)}` +
+          `&lang=${encodeURIComponent(config.language)}`;
 
         const dir = new Directory(Paths.cache, 'reveal');
         if (!dir.exists) dir.create({ intermediates: true });

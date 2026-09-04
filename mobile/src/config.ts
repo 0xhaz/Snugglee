@@ -32,8 +32,66 @@ function pickRegion(): string {
   }
 }
 
+/**
+ * Languages the product can actually deliver, not languages the vendors accept.
+ *
+ * This list mirrors the authored reveal lines in `server/src/story.ts` exactly.
+ * The reveal is the one line spoken *as* the parent, and design.md §4.2 makes
+ * the speaker's role a required slot: a father's cloned voice saying *Ibu
+ * sayang kamu* ("Mother loves you") is not a rough edge, it is wrong about who
+ * he is. So a language ships only once its reveal AND its kinship terms are
+ * authored — never machine-translated.
+ *
+ * Deliberately narrower than vendor capability (Cartesia 42, MiniMax 40+).
+ * Sending an arbitrary device locale to the clone endpoint would risk a vendor
+ * rejection on VOX-01, the one path where a failure costs the enrolment.
+ *
+ * ⚠️ Story BODIES are still English — the Instant Path skeletons are English
+ * prose (techstacks.md §11 puts the cost there). This makes the reveal land in
+ * the parent's language, not the whole story. Widening it is workplan phase 5,
+ * gated on judging SPK-04 clone quality and on assessing the safety
+ * classifier per language BEFORE enabling it.
+ */
+const SUPPORTED_LANGUAGES = [
+  'en',
+  'ms',
+  'id',
+  'tl',
+  'vi',
+  'ko',
+  'ja',
+  'zh',
+  'th',
+  'es',
+  'fr',
+  'de',
+] as const;
+
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+/**
+ * The device's language, clamped to what we can deliver. Falls back to English,
+ * which is always safe: the server falls back the same way.
+ */
+function pickLanguage(): SupportedLanguage {
+  try {
+    // `languageCode` is the bare subtag — 'ms', not 'ms-MY'.
+    const code = getLocales()[0]?.languageCode?.toLowerCase() ?? '';
+    return (SUPPORTED_LANGUAGES as readonly string[]).includes(code)
+      ? (code as SupportedLanguage)
+      : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
 export const config = {
   apiBaseUrl: pickRegion(),
+  /**
+   * Resolved once at launch. A parent who changes their phone's language mid-
+   * session gets the new one on next open, which is the same contract as region.
+   */
+  language: pickLanguage(),
   /** D-16. The server also enforces this — belt and braces on the COGS control. */
   prefetchDepth: 2,
 } as const;

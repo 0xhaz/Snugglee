@@ -49,9 +49,18 @@ export default function Consent() {
         </AppText>
 
         <View style={styles.facts}>
-          <Fact>Your recording is used once to make the voice, then deleted. We never keep it.</Fact>
+          {/*
+            5.1.1(i) requires the RECIPIENT to be named, not described. "Our
+            provider" is what this said before, and it is what the app was
+            rejected for. Cartesia is named, and what it receives is stated.
+          */}
+          <Fact>
+            Your recording is sent to Cartesia, the speech company that builds the voice.
+            They receive the audio and nothing else — not your name, not your child's.
+          </Fact>
+          <Fact>It is used once to make the voice, then deleted. Neither we nor Cartesia keep the recording, and it is never used to train anything.</Fact>
           <Fact>Only you can use your voice. It is never shared, exported, or given to anyone else.</Fact>
-          <Fact>You can delete your voice at any time, and we delete it from our provider too.</Fact>
+          <Fact>You can delete your voice at any time. We remove it from our systems and confirm Cartesia has removed theirs.</Fact>
         </View>
 
         <AppText variant="subheading" bold style={styles.q}>
@@ -75,7 +84,7 @@ export default function Consent() {
         </View>
 
         <PrimaryButton
-          label="I agree — record my voice"
+          label="I agree — send my recording to Cartesia"
           disabled={!role}
           onPress={() =>
             router.push({ pathname: '/record', params: { childName: name, role: role! } })

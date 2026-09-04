@@ -75,9 +75,9 @@ export function summary(): Summary {
 
 function emit() {
   const s = summary();
-  // Logged unconditionally: GATE-B is measured on a real device where a debug
-  // overlay may not be visible, and the Metro console is the record.
-  console.log('[GATE-B]', JSON.stringify(s, null, 2));
+  // Dev only. GATE-B is a development measurement, and shipping it logs a
+  // timing dump on every story a real parent plays.
+  if (__DEV__) console.log('[GATE-B]', JSON.stringify(s, null, 2));
   listeners.forEach((fn) => fn(s));
 }
 

@@ -81,6 +81,18 @@ export default function Privacy() {
         deleted. We store only a reference, and only you can use it.
       </Section>
 
+      {/*
+        5.1.1(i) — the recipients are named IN THE APP, not only in the policy
+        on the website. Apple's rejection said linking out is not sufficient.
+      */}
+      <Section title="Who receives your data">
+        Cartesia and MiniMax turn text into speech, so they receive your child's
+        first name inside the sentences that are read aloud. Cartesia also
+        receives your voice recording if you make one. Google (Gemini) writes
+        the story wording and never receives your child's name — it is replaced
+        with a blank before we send it, and put back on our server afterwards.
+        Nothing is used to train anyone's AI.
+      </Section>
       <Section title="Advertising">
         None. We do not use behavioural advertising or tracking analytics.
       </Section>
