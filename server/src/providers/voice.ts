@@ -69,7 +69,14 @@ const cartesiaHeaders = () => ({
 
 async function cartesiaSynthesize(req: SynthesizeRequest): Promise<SynthesizeResult> {
   const t0 = Date.now();
-  if (req.voice.kind !== 'cloned') throw new Error('cartesia is only used for cloned voices');
+  /**
+   * Cartesia takes a voice id and does not care where it came from — cloned vs
+   * stock is OUR distinction, not the vendor's. A stock request uses the
+   * configured library voice.
+   */
+  const voiceId =
+    req.voice.kind === 'cloned' ? req.voice.voiceId : config.cartesia.stockVoiceId;
+  if (!voiceId) throw new Error('cartesia: no voice id (CARTESIA_STOCK_VOICE_ID unset?)');
 
   const res = await fetch('https://api.cartesia.ai/tts/bytes', {
     method: 'POST',
@@ -77,7 +84,7 @@ async function cartesiaSynthesize(req: SynthesizeRequest): Promise<SynthesizeRes
     body: JSON.stringify({
       model_id: config.cartesia.model,
       transcript: req.text,
-      voice: { mode: 'id', id: req.voice.voiceId },
+      voice: { mode: 'id', id: voiceId },
       output_format: { container: 'mp3', sample_rate: 44100, bit_rate: 128000 },
       language: req.lang,
       generation_config: { speed: req.speed ?? 0.85, emotion: 'calm' },
@@ -114,9 +121,35 @@ async function cartesiaClone(sample: Buffer, lang: string) {
 /* --------------------------------- routing --------------------------------- */
 
 export const voiceProvider: VoiceProvider = {
+  /**
+   * ── VENDOR CONSOLIDATION, 2026-09-06 ──────────────────────────────────
+   *
+   * Both paths now go to Cartesia first. The original split sent stock to
+   * MiniMax because the free tier "scales with SIGNUPS, which are unbounded"
+   * and MiniMax bills per character with no floor, whereas Cartesia sells a
+   * fixed monthly bucket.
+   *
+   * That reasoning was written when the free tier was unlimited. **D-17 caps
+   * it at one story per install**, so free volume is now bounded by installs
+   * rather than by usage — which is what made the two-vendor split worth its
+   * cost. Paying two vendors to hedge a risk the product no longer carries is
+   * not a hedge, it is just a second bill.
+   *
+   * It also removes an asymmetry that caused a real outage: cloned synthesis
+   * had a fallback and stock did not, so an empty MiniMax account returned 500
+   * on page 1 for every new user — the free path being the ONE path a
+   * first-time parent hits, and D-06 putting the voice ask after the first
+   * story so they cannot route around it.
+   *
+   * MiniMax stays wired as the fallback. Keeping a second vendor reachable
+   * costs nothing while unused and means a Cartesia outage degrades the voice
+   * instead of ending the story.
+   *
+   * ⚠️ The shared bucket is the trade being made: free users now draw on the
+   * same Cartesia credits paying users depend on. Watch the balance, because
+   * Cartesia does not publish what happens at exhaustion (workplan §4).
+   */
   async synthesize(req) {
-    if (req.voice.kind === 'stock') return minimaxSynthesize(req);
-
     try {
       return await cartesiaSynthesize(req);
     } catch (e) {
@@ -133,7 +166,7 @@ export const voiceProvider: VoiceProvider = {
        * error to a parent at bedtime. The story still plays. The caller is told
        * the voice was substituted so it can surface it *later*, never mid-story.
        */
-      console.error('[voice] cloned synthesis failed, degrading to stock narrator', e);
+      console.error('[voice] cartesia synthesis failed, degrading to stock narrator', e);
       const stock = await minimaxSynthesize({ ...req, voice: { kind: 'stock' } });
       return { ...stock, vendor: 'minimax:degraded-from-cartesia' };
     }

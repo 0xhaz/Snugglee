@@ -23,13 +23,16 @@
 /**
  * Which voice is being asked for — not which vendor.
  *
- * Callers must never name a vendor. The split (workplan §4) is:
- *   stock  → MiniMax   pay-as-you-go, scales with SIGNUPS which are unbounded
- *   cloned → Cartesia  won O-02 on timbre; volume is bounded by revenue
+ * Callers must never name a vendor. Both kinds now route to Cartesia, with
+ * MiniMax kept as the degradation path (see providers/voice.ts).
  *
- * Timbre identity only matters for `cloned` — nobody asks whether the stock
- * narrator sounds like them — so the O-02 result simply does not apply to the
- * free path. Routing here keeps that reasoning in one place.
+ * The original split sent stock to MiniMax because the free tier "scales with
+ * SIGNUPS, which are unbounded". **D-17 capped the free tier at one story per
+ * install**, so that volume is now bounded by installs — and the second vendor
+ * stopped earning its bill.
+ *
+ * This type still exists and still matters: it is what lets the routing change
+ * without a single caller knowing, which is the whole point of BE-03.
  */
 export type VoiceKind =
   | { kind: 'stock'; voice?: string }

@@ -42,6 +42,14 @@ export const config = {
     apiKey: () => req('CARTESIA_API_KEY'),
     version: opt('CARTESIA_VERSION', '2026-03-01'),
     model: opt('CARTESIA_MODEL', 'sonic-3.5'),
+    /**
+     * The stock narrator, from Cartesia's own voice library.
+     *
+     * Set this to a calm, warm, unhurried voice — it is what every parent
+     * hears before they enrol, so it is the product's first impression.
+     * Left empty, stock synthesis falls back to MiniMax.
+     */
+    stockVoiceId: opt('CARTESIA_STOCK_VOICE_ID', ''),
   },
 
   revenuecat: {
