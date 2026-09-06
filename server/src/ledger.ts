@@ -107,10 +107,23 @@ export async function history(userId: string, limit = 50) {
  * no "signup" moment to hook. Idempotent on the uid, so calling it on every
  * balance read is safe and the grant happens exactly once.
  *
- * "Tune post-launch" (D-17) means this number moves. It is the only place it
- * is written down in code.
+ * "Tune post-launch" (D-17) means this number moves, so it is an ENV VAR
+ * rather than a constant — a launch campaign is a `gcloud run services update`
+ * and a minute, not a redeploy and a review cycle.
+ *
+ *   gcloud run services update snugglee-api --region=asia-southeast1 \
+ *     --project=snugglee-prod --update-env-vars WELCOME_CREDITS=3
+ *
+ * ⚠️ It applies to EVERYONE, not just the campaign audience — the grant is
+ * keyed on the Firebase uid and there is nowhere to attribute a referrer. It
+ * also resets on reinstall, because an anonymous uid is device-bound and a
+ * fresh install is a fresh user. At 1 that is not worth farming; the higher
+ * this goes, the more it is. Raise it for a campaign, then put it back.
+ *
+ * Cost is real: ECONOMICS puts a free Instant-Path story at $0.149 marginal,
+ * so 3 free stories is ~$0.45 per install even if nobody ever pays.
  */
-export const WELCOME_CREDITS = 1;
+export const WELCOME_CREDITS = Number(process.env.WELCOME_CREDITS ?? 1);
 
 export const grantWelcome = (userId: string) =>
   append(
