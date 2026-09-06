@@ -26,18 +26,33 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
-import { getApps, initializeApp } from 'firebase/app';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
   GoogleAuthProvider,
   OAuthProvider,
   getAuth,
+  initializeAuth,
   linkWithCredential,
   onAuthStateChanged,
   signInAnonymously,
   signInWithCredential,
+  type Auth,
   type AuthCredential,
   type User,
 } from 'firebase/auth';
+/**
+ * ⚠️ Imported from '@firebase/auth', not 'firebase/auth'.
+ *
+ * The umbrella package does not re-export this symbol at all, and the scoped
+ * package lists "types" BEFORE its "react-native" condition — so TypeScript
+ * always resolves the browser typings and never sees it, while Metro resolves
+ * the RN build where it does exist. The suppression is Firebase's packaging,
+ * not a workaround for our own code. If they fix the export order, this line
+ * starts erroring as an unused expect-error, which is the signal to delete it.
+ */
+// @ts-expect-error — RN-only export, absent from the browser typings.
+import { getReactNativePersistence } from '@firebase/auth';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyD177vo64SIdCIKqxQRuSTDj8kqTZHzizI',
@@ -48,34 +63,75 @@ const firebaseConfig = {
   appId: '1:75574145355:web:0e3e0fc496227735e3b8ce',
 };
 
-if (!getApps().length) initializeApp(firebaseConfig);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-const auth = getAuth();
+/**
+ * ⚠️ AUTH MUST BE PERSISTED. This is not a nicety.
+ *
+ * The Firebase JS SDK defaults to IN-MEMORY persistence on React Native, so
+ * `getAuth()` alone meant every app launch minted a brand-new anonymous user.
+ * The uid is the key for the credit ledger and the voice record, so on every
+ * restart the parent silently lost:
+ *
+ *   - their enrolled voice (orphaned against a uid nothing remembers)
+ *   - **every credit they had paid for** — consumables no store will restore
+ *   - and picked up a fresh D-17 welcome grant, which masked the whole thing
+ *     by making the balance look plausible
+ *
+ * `initializeAuth` throws if auth already exists for this app, which happens
+ * on Fast Refresh — hence the fallback rather than a guard flag.
+ */
+let auth: Auth;
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+} catch {
+  auth = getAuth(app);
+}
 
 let signInPromise: Promise<User> | null = null;
 
 /**
- * Resolves to a signed-in user, creating an anonymous one if needed.
+ * Resolves to a signed-in user, restoring the persisted one or creating an
+ * anonymous one if there is genuinely none.
  *
  * Deduped: the Day-0 path may call this from several places at once (S-01
  * mounting, the player starting), and two concurrent signInAnonymously calls
  * would create two anonymous users — and therefore two ledgers.
+ *
+ * ⚠️ ORDER MATTERS. Restoring from AsyncStorage is asynchronous, so at launch
+ * `auth.currentUser` is null for a moment even when a session exists. The
+ * previous version called `signInAnonymously` immediately and unconditionally,
+ * which would have defeated the persistence fix on its own — a race, decided
+ * by disk speed, over whether a returning parent kept their credits.
+ *
+ * So we WAIT for the first auth-state callback, which Firebase fires only once
+ * initialisation has settled. A user means restore succeeded. Null means there
+ * is nothing to restore, and only then do we mint a new anonymous identity.
  */
 export function ensureSession(): Promise<User> {
   if (auth.currentUser) return Promise.resolve(auth.currentUser);
   if (signInPromise) return signInPromise;
 
   signInPromise = new Promise<User>((resolve, reject) => {
+    let creating = false;
+
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
         unsub();
         resolve(user);
+        return;
       }
-    });
-    signInAnonymously(auth).catch((err) => {
-      unsub();
-      signInPromise = null;
-      reject(err);
+      // Null AFTER initialisation: nothing was persisted. Guarded because this
+      // fires again while the new user is being created.
+      if (creating) return;
+      creating = true;
+      signInAnonymously(auth).catch((err) => {
+        unsub();
+        signInPromise = null;
+        reject(err);
+      });
     });
   });
 
